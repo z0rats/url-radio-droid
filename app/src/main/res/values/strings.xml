@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">URL Radio Droid</string>
+    <string name="add_station">Добавить</string>
+    <string name="station_name">Название станции</string>
+    <string name="stream_url">URL стрима</string>
+    <string name="save">Сохранить</string>
+    <string name="play">Воспроизвести</string>
+    <string name="stop">Остановить</string>
+    <string name="volume">Громкость</string>
+    <string name="no_stations">Нет сохранённых станций</string>
+    <string name="error_invalid_url">Неверный URL</string>
+    <string name="error_network">Ошибка сети</string>
+    <string name="error_playback">Ошибка воспроизведения</string>
+</resources>
