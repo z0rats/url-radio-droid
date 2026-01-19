@@ -3,10 +3,11 @@ package com.urlradiodroid.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface RadioStationDao {
-    @Query("SELECT * FROM radio_stations ORDER BY name ASC")
+    @Query("SELECT * FROM radio_stations ORDER BY id ASC")
     suspend fun getAllStations(): List<RadioStation>
 
     @Query("SELECT * FROM radio_stations WHERE id = :id")
@@ -14,4 +15,16 @@ interface RadioStationDao {
 
     @Insert
     suspend fun insertStation(station: RadioStation): Long
+
+    @Update
+    suspend fun updateStation(station: RadioStation)
+
+    @Query("DELETE FROM radio_stations WHERE id = :id")
+    suspend fun deleteStation(id: Long)
+
+    @Query("SELECT * FROM radio_stations WHERE name = :name AND id != :excludeId LIMIT 1")
+    suspend fun findStationByName(name: String, excludeId: Long = 0): RadioStation?
+
+    @Query("SELECT * FROM radio_stations WHERE streamUrl = :url AND id != :excludeId LIMIT 1")
+    suspend fun findStationByUrl(url: String, excludeId: Long = 0): RadioStation?
 }

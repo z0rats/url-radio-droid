@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Custom attributes for better Material Design 3 support -->
+
+    <!-- Shape attributes -->
+    <attr name="shapeAppearanceSmallComponent" format="reference" />
+    <attr name="shapeAppearanceMediumComponent" format="reference" />
+    <attr name="shapeAppearanceLargeComponent" format="reference" />
+</resources>

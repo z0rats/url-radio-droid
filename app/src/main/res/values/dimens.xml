@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 Spacing System -->
+
+    <!-- Base spacing unit: 4dp -->
+    <dimen name="spacing_0">0dp</dimen>
+    <dimen name="spacing_1">4dp</dimen>
+    <dimen name="spacing_2">8dp</dimen>
+    <dimen name="spacing_3">12dp</dimen>
+    <dimen name="spacing_4">16dp</dimen>
+    <dimen name="spacing_5">20dp</dimen>
+    <dimen name="spacing_6">24dp</dimen>
+    <dimen name="spacing_7">28dp</dimen>
+    <dimen name="spacing_8">32dp</dimen>
+    <dimen name="spacing_9">36dp</dimen>
+    <dimen name="spacing_10">40dp</dimen>
+    <dimen name="spacing_12">48dp</dimen>
+    <dimen name="spacing_16">64dp</dimen>
+
+    <!-- Component spacing -->
+    <dimen name="component_padding_small">8dp</dimen>
+    <dimen name="component_padding_medium">16dp</dimen>
+    <dimen name="component_padding_large">24dp</dimen>
+
+    <!-- Card spacing -->
+    <dimen name="card_padding">20dp</dimen>
+    <dimen name="card_margin">16dp</dimen>
+    <dimen name="card_corner_radius">24dp</dimen>
+    <dimen name="card_elevation">8dp</dimen>
+
+    <!-- Button dimensions -->
+    <dimen name="button_height_standard">48dp</dimen>
+    <dimen name="button_height_large">56dp</dimen>
+    <dimen name="button_height_extra_large">72dp</dimen>
+    <dimen name="button_corner_radius">16dp</dimen>
+    <dimen name="button_padding_horizontal">24dp</dimen>
+
+    <!-- Text input dimensions -->
+    <dimen name="text_input_height">56dp</dimen>
+    <dimen name="text_input_corner_radius">16dp</dimen>
+
+    <!-- Icon sizes -->
+    <dimen name="icon_size_small">16dp</dimen>
+    <dimen name="icon_size_medium">24dp</dimen>
+    <dimen name="icon_size_large">32dp</dimen>
+    <dimen name="icon_size_extra_large">48dp</dimen>
+
+    <!-- FAB dimensions -->
+    <dimen name="fab_size">56dp</dimen>
+    <dimen name="fab_margin">24dp</dimen>
+
+    <!-- Screen margins -->
+    <dimen name="screen_margin_horizontal">16dp</dimen>
+    <dimen name="screen_margin_vertical">24dp</dimen>
+
+    <!-- List item spacing -->
+    <dimen name="list_item_spacing">12dp</dimen>
+    <dimen name="list_padding_horizontal">16dp</dimen>
+    <dimen name="list_padding_vertical">24dp</dimen>
+</resources>

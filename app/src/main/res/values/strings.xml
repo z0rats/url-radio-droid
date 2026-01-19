@@ -1,15 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">URL Radio Droid</string>
-    <string name="add_station">Добавить</string>
-    <string name="station_name">Название станции</string>
-    <string name="stream_url">URL стрима</string>
-    <string name="save">Сохранить</string>
-    <string name="play">Воспроизвести</string>
-    <string name="stop">Остановить</string>
-    <string name="volume">Громкость</string>
-    <string name="no_stations">Нет сохранённых станций</string>
-    <string name="error_invalid_url">Неверный URL</string>
-    <string name="error_network">Ошибка сети</string>
-    <string name="error_playback">Ошибка воспроизведения</string>
+    <string name="add_station">Add</string>
+    <string name="station_name">Station Name</string>
+    <string name="stream_url">Stream URL</string>
+    <string name="save">Save</string>
+    <string name="play">Play</string>
+    <string name="stop">Stop</string>
+    <string name="volume">Volume</string>
+    <string name="no_stations">No saved stations</string>
+    <string name="error_invalid_url">Invalid URL</string>
+    <string name="error_network">Network error</string>
+    <string name="error_playback">Playback error</string>
+    <string name="error_live_window">Stream position behind live window, seeking to live edge</string>
+    <string name="enter_name">Enter name</string>
+    <string name="enter_url">Enter URL</string>
+    <string name="station_saved">Station saved</string>
+    <string name="save_error">Save error: %1$s</string>
+    <string name="unknown_station">Unknown station</string>
+    <string name="back">Back</string>
+    <string name="error_duplicate_name">Station with this name already exists</string>
+    <string name="error_duplicate_url">Station with this URL already exists</string>
+    <string name="station_updated">Station updated</string>
+    <string name="edit_station">Edit station</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="delete_station">Delete station</string>
+    <string name="delete_station_confirmation">Are you sure you want to delete this station?</string>
+    <string name="cancel">Cancel</string>
+    <string name="station_deleted">Station deleted</string>
 </resources>

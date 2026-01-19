@@ -1,5 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material Design 3 Color System -->
+
+    <!-- Primary Colors -->
+    <color name="md_theme_light_primary">#FF6C9BCF</color>
+    <color name="md_theme_light_onPrimary">#FFFFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#FFE0E7FF</color>
+    <color name="md_theme_light_onPrimaryContainer">#FF1A1F3D</color>
+
+    <color name="md_theme_dark_primary">#FF9BB5FF</color>
+    <color name="md_theme_dark_onPrimary">#FF2A3F6B</color>
+    <color name="md_theme_dark_primaryContainer">#FF4A5F8F</color>
+    <color name="md_theme_dark_onPrimaryContainer">#FFE0E7FF</color>
+
+    <!-- Secondary Colors -->
+    <color name="md_theme_light_secondary">#FF667EEA</color>
+    <color name="md_theme_light_onSecondary">#FFFFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#FFE8E5FF</color>
+    <color name="md_theme_light_onSecondaryContainer">#FF1F1A3D</color>
+
+    <color name="md_theme_dark_secondary">#FF9BA5FF</color>
+    <color name="md_theme_dark_onSecondary">#FF2F3A6B</color>
+    <color name="md_theme_dark_secondaryContainer">#FF4F5A8F</color>
+    <color name="md_theme_dark_onSecondaryContainer">#FFE8E5FF</color>
+
+    <!-- Tertiary Colors -->
+    <color name="md_theme_light_tertiary">#FF764BA2</color>
+    <color name="md_theme_light_onTertiary">#FFFFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#FFF0E5FF</color>
+    <color name="md_theme_light_onTertiaryContainer">#FF2F1A3D</color>
+
+    <color name="md_theme_dark_tertiary">#FFA57BCF</color>
+    <color name="md_theme_dark_onTertiary">#FF4F2F6B</color>
+    <color name="md_theme_dark_tertiaryContainer">#FF6F4F8F</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFF0E5FF</color>
+
+    <!-- Error Colors -->
+    <color name="md_theme_light_error">#FFBA1A1A</color>
+    <color name="md_theme_light_onError">#FFFFFFFF</color>
+    <color name="md_theme_light_errorContainer">#FFFFDAD6</color>
+    <color name="md_theme_light_onErrorContainer">#FF410002</color>
+
+    <color name="md_theme_dark_error">#FFFFB4AB</color>
+    <color name="md_theme_dark_onError">#FF690005</color>
+    <color name="md_theme_dark_errorContainer">#FF93000A</color>
+    <color name="md_theme_dark_onErrorContainer">#FFFFDAD6</color>
+
+    <!-- Surface Colors -->
+    <color name="md_theme_light_surface">#FFFFFBFF</color>
+    <color name="md_theme_light_onSurface">#FF1C1B1F</color>
+    <color name="md_theme_light_surfaceVariant">#FFE5E1E6</color>
+    <color name="md_theme_light_onSurfaceVariant">#FF48454A</color>
+    <color name="md_theme_light_surfaceContainerHighest">#FFE5E1E6</color>
+    <color name="md_theme_light_surfaceContainerHigh">#FFEBE7EC</color>
+    <color name="md_theme_light_surfaceContainer">#FFF1EDF2</color>
+    <color name="md_theme_light_surfaceContainerLow">#FFF7F3F8</color>
+    <color name="md_theme_light_surfaceContainerLowest">#FFFFFFFF</color>
+
+    <color name="md_theme_dark_surface">#FF1C1B1F</color>
+    <color name="md_theme_dark_onSurface">#FFE5E1E6</color>
+    <color name="md_theme_dark_surfaceVariant">#FF48454A</color>
+    <color name="md_theme_dark_onSurfaceVariant">#FFCAC4D0</color>
+    <color name="md_theme_dark_surfaceContainerHighest">#FF333238</color>
+    <color name="md_theme_dark_surfaceContainerHigh">#FF2A292E</color>
+    <color name="md_theme_dark_surfaceContainer">#FF211F24</color>
+    <color name="md_theme_dark_surfaceContainerLow">#FF1C1B1F</color>
+    <color name="md_theme_dark_surfaceContainerLowest">#FF0E0D11</color>
+
+    <!-- Outline Colors -->
+    <color name="md_theme_light_outline">#FF79747E</color>
+    <color name="md_theme_light_outlineVariant">#FFCAC4D0</color>
+
+    <color name="md_theme_dark_outline">#FF938F99</color>
+    <color name="md_theme_dark_outlineVariant">#FF48454A</color>
+
+    <!-- Background Gradient Colors -->
+    <color name="background_gradient_start">#FF667EEA</color>
+    <color name="background_gradient_end">#FF764BA2</color>
+
+    <!-- Legacy Colors (for backward compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,4 +86,12 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Glass Morphism Colors (for current design) -->
+    <color name="glass_primary">#40FFFFFF</color>
+    <color name="glass_secondary">#30FFFFFF</color>
+    <color name="glass_accent">#FF6C9BCF</color>
+    <color name="glass_dark">#80000000</color>
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="text_secondary">#B3FFFFFF</color>
 </resources>

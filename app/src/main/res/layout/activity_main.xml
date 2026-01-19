@@ -4,31 +4,67 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    android:fitsSystemWindows="false"
     tools:context=".ui.MainActivity">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:elevation="0dp"
+        app:elevation="0dp">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent"
+            android:paddingStart="@dimen/spacing_4"
+            android:paddingEnd="@dimen/spacing_4"
+            app:title="@string/app_name"
+            app:titleTextAppearance="@style/TextAppearance.Headline.Medium"
+            app:titleTextColor="@color/text_primary" />
+
+    </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewStations"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
+        android:clipToPadding="false"
+        android:paddingStart="@dimen/list_padding_horizontal"
+        android:paddingTop="@dimen/spacing_2"
+        android:paddingEnd="@dimen/list_padding_horizontal"
+        android:paddingBottom="@dimen/spacing_16"
+        android:fitsSystemWindows="false"
+        android:scrollbars="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/item_station" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabAdd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/fab_margin"
         android:contentDescription="@string/add_station"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        android:text="@string/add_station"
+        android:textColor="@color/md_theme_light_onPrimary"
+        app:backgroundTint="@color/md_theme_light_primary"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="@color/md_theme_light_onPrimary" />
 
     <TextView
         android:id="@+id/textViewEmpty"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:layout_margin="@dimen/spacing_6"
         android:text="@string/no_stations"
-        android:textSize="16sp"
+        android:textAppearance="@style/TextAppearance.Body.Large"
+        android:textColor="@color/text_secondary"
         android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
