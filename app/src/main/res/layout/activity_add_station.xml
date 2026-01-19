@@ -78,8 +78,8 @@
                         app:boxCornerRadiusTopStart="@dimen/text_input_corner_radius"
                         app:boxStrokeColor="@color/glass_accent"
                         app:boxStrokeWidth="2dp"
-                        app:hintTextAppearance="@style/TextAppearance.Body.Medium"
-                        app:hintTextColor="@color/text_primary"
+                        app:hintTextAppearance="@style/TextAppearance.Hint"
+                        app:hintTextColor="@color/text_hint"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent">
@@ -91,7 +91,8 @@
                             android:inputType="text"
                             android:textAppearance="@style/TextAppearance.Body.Large"
                             android:textColor="@color/text_primary"
-                            android:textColorHint="@color/text_secondary"
+                            android:textColorHint="@color/text_hint"
+                            android:letterSpacing="0"
                             android:minHeight="@dimen/text_input_height" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -111,8 +112,8 @@
                         app:boxCornerRadiusTopStart="@dimen/text_input_corner_radius"
                         app:boxStrokeColor="@color/glass_accent"
                         app:boxStrokeWidth="2dp"
-                        app:hintTextAppearance="@style/TextAppearance.Body.Medium"
-                        app:hintTextColor="@color/text_primary"
+                        app:hintTextAppearance="@style/TextAppearance.Hint"
+                        app:hintTextColor="@color/text_hint"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/textInputLayoutName">
@@ -124,7 +125,8 @@
                             android:inputType="textUri"
                             android:textAppearance="@style/TextAppearance.Body.Large"
                             android:textColor="@color/text_primary"
-                            android:textColorHint="@color/text_secondary"
+                            android:textColorHint="@color/text_hint"
+                            android:letterSpacing="0"
                             android:minHeight="@dimen/text_input_height"
                             android:autofillHints="url" />
 

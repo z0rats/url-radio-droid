@@ -46,16 +46,27 @@ class StationAdapter(
         fun bind(station: RadioStation) {
             binding.textViewStationName.text = station.name
             binding.textViewStationEmoji.text = EmojiGenerator.getEmojiForStation(station.name, station.streamUrl)
+            
+            // Always show URL under station name
+            binding.textViewStationUrl.text = station.streamUrl
 
             binding.cardStation.setOnClickListener {
-                // Reset all swipes before opening
-                adapter.resetAllSwipes()
+                // Always open station on click - single click opens immediately
+                // If item is swiped, reset swipe first (but still open)
+                if (adapter.swipedViewHolder == this) {
+                    resetSwipePosition()
+                }
                 onStationClick(station)
             }
+
             binding.cardStation.setOnLongClickListener {
-                // Reset all swipes before opening
-                adapter.resetAllSwipes()
-                onStationLongClick(station)
+                // Long press opens edit (settings)
+                // If item is swiped, reset swipe first
+                if (adapter.swipedViewHolder == this) {
+                    resetSwipePosition()
+                }
+                // Always open edit on long press
+                onStationEdit(station)
                 true
             }
 
@@ -89,11 +100,24 @@ class StationAdapter(
                     adapter.swipedViewHolder?.resetSwipePosition()
                 }
                 adapter.swipedViewHolder = this
-                binding.cardStation.translationX = dX
+                
+                // Limit swipe to button width - don't allow swiping beyond buttons
+                val maxSwipe = if (binding.layoutSwipeButtons.width > 0) {
+                    -binding.layoutSwipeButtons.width.toFloat()
+                } else {
+                    // If width not measured yet, use a reasonable default
+                    -200f
+                }
+                val limitedDx = dX.coerceAtLeast(maxSwipe)
+                binding.cardStation.translationX = limitedDx
                 binding.layoutSwipeButtons.visibility = View.VISIBLE
             } else if (dX == 0f) {
                 // Swipe released - keep buttons visible if swiped enough
-                val swipeThreshold = -binding.layoutSwipeButtons.width.toFloat()
+                val swipeThreshold = if (binding.layoutSwipeButtons.width > 0) {
+                    -binding.layoutSwipeButtons.width.toFloat()
+                } else {
+                    -200f
+                }
                 if (binding.cardStation.translationX < swipeThreshold / 2) {
                     // Keep buttons visible
                     binding.cardStation.translationX = swipeThreshold

@@ -75,8 +75,8 @@
     <color name="md_theme_dark_outlineVariant">#FF48454A</color>
 
     <!-- Background Gradient Colors -->
-    <color name="background_gradient_start">#FF667EEA</color>
-    <color name="background_gradient_end">#FF764BA2</color>
+    <color name="background_gradient_start">#FF4A3B5D</color>
+    <color name="background_gradient_end">#FF3A2F4E</color>
 
     <!-- Legacy Colors (for backward compatibility) -->
     <color name="purple_200">#FFBB86FC</color>
@@ -88,10 +88,11 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- Glass Morphism Colors (for current design) -->
-    <color name="glass_primary">#40FFFFFF</color>
-    <color name="glass_secondary">#30FFFFFF</color>
-    <color name="glass_accent">#FF6C9BCF</color>
-    <color name="glass_dark">#80000000</color>
+    <color name="glass_primary">#40000000</color>
+    <color name="glass_secondary">#30000000</color>
+    <color name="glass_accent">#FF9BB5FF</color>
+    <color name="glass_dark">#60000000</color>
     <color name="text_primary">#FFFFFFFF</color>
-    <color name="text_secondary">#B3FFFFFF</color>
+    <color name="text_secondary">#E6FFFFFF</color>
+    <color name="text_hint">#B3FFFFFF</color>
 </resources>

@@ -103,21 +103,29 @@
     <!-- Body styles -->
     <style name="TextAppearance.Body.Large" parent="TextAppearance.Body">
         <item name="android:textSize">16sp</item>
-        <item name="android:letterSpacing">0.5</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:textStyle">normal</item>
     </style>
 
     <style name="TextAppearance.Body.Medium" parent="TextAppearance.Body">
         <item name="android:textSize">14sp</item>
-        <item name="android:letterSpacing">0.25</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:textStyle">normal</item>
     </style>
 
     <style name="TextAppearance.Body.Small" parent="TextAppearance.Body">
         <item name="android:textSize">12sp</item>
-        <item name="android:letterSpacing">0.4</item>
+        <item name="android:letterSpacing">0</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Hint/Placeholder specific style -->
+    <style name="TextAppearance.Hint" parent="TextAppearance.Body.Medium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif</item>
         <item name="android:textStyle">normal</item>
     </style>

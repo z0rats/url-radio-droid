@@ -8,9 +8,14 @@ class StationAdapterTest {
     @Test
     fun `test StationAdapter submitList updates item count`() {
         var clickedStation: RadioStation? = null
-        val adapter = StationAdapter { station ->
-            clickedStation = station
-        }
+        val adapter = StationAdapter(
+            onStationClick = { station ->
+                clickedStation = station
+            },
+            onStationLongClick = { },
+            onStationEdit = { },
+            onStationDelete = { }
+        )
 
         val stations = listOf(
             RadioStation(id = 1L, name = "Station 1", streamUrl = "http://example.com/1"),
@@ -24,7 +29,12 @@ class StationAdapterTest {
 
     @Test
     fun `test StationAdapter with empty list`() {
-        val adapter = StationAdapter { }
+        val adapter = StationAdapter(
+            onStationClick = { },
+            onStationLongClick = { },
+            onStationEdit = { },
+            onStationDelete = { }
+        )
 
         adapter.submitList(emptyList())
 
@@ -33,7 +43,12 @@ class StationAdapterTest {
 
     @Test
     fun `test StationAdapter handles list updates`() {
-        val adapter = StationAdapter { }
+        val adapter = StationAdapter(
+            onStationClick = { },
+            onStationLongClick = { },
+            onStationEdit = { },
+            onStationDelete = { }
+        )
 
         val initialStations = listOf(
             RadioStation(id = 1L, name = "Station 1", streamUrl = "http://example.com/1")

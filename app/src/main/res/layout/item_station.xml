@@ -4,7 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/list_item_spacing"
-    android:minHeight="72dp">
+    android:minHeight="80dp"
+    android:clickable="false"
+    android:focusable="false">
 
     <!-- Swipe buttons background -->
     <LinearLayout
@@ -13,9 +15,9 @@
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="@dimen/spacing_4"
-        android:paddingEnd="@dimen/spacing_4"
-        android:background="@color/md_theme_light_surfaceContainerHighest"
+        android:paddingStart="@dimen/spacing_3"
+        android:paddingEnd="@dimen/spacing_3"
+        android:background="@android:color/transparent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -30,8 +32,9 @@
             android:backgroundTint="@color/md_theme_light_primary"
             android:minWidth="0dp"
             android:minHeight="48dp"
-            android:paddingStart="@dimen/spacing_4"
-            android:paddingEnd="@dimen/spacing_4"
+            android:paddingStart="@dimen/spacing_3"
+            android:paddingEnd="@dimen/spacing_3"
+            android:letterSpacing="0"
             android:contentDescription="@string/edit_station"
             app:cornerRadius="@dimen/button_corner_radius"
             app:elevation="0dp" />
@@ -47,8 +50,9 @@
             android:backgroundTint="@color/md_theme_light_error"
             android:minWidth="0dp"
             android:minHeight="48dp"
-            android:paddingStart="@dimen/spacing_4"
-            android:paddingEnd="@dimen/spacing_4"
+            android:paddingStart="@dimen/spacing_3"
+            android:paddingEnd="@dimen/spacing_3"
+            android:letterSpacing="0"
             android:contentDescription="@string/delete_station"
             app:cornerRadius="@dimen/button_corner_radius"
             app:elevation="0dp" />
@@ -60,8 +64,8 @@
         android:id="@+id/cardStation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="72dp"
-        android:foreground="?attr/selectableItemBackground"
+        android:minHeight="80dp"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         android:focusable="true"
         android:focusableInTouchMode="true"
@@ -74,55 +78,75 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:rippleColor="@color/md_theme_light_primaryContainer">
+        app:rippleColor="@android:color/transparent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/spacing_4"
-            android:paddingTop="@dimen/spacing_3"
-            android:paddingEnd="@dimen/spacing_4"
-            android:paddingBottom="@dimen/spacing_3"
-            android:minHeight="72dp">
+            android:paddingStart="@dimen/spacing_5"
+            android:paddingTop="@dimen/spacing_4"
+            android:paddingEnd="@dimen/spacing_5"
+            android:paddingBottom="@dimen/spacing_4"
+            android:minHeight="80dp">
 
             <TextView
                 android:id="@+id/textViewStationEmoji"
                 android:layout_width="@dimen/icon_size_extra_large"
                 android:layout_height="@dimen/icon_size_extra_large"
-                android:textSize="32sp"
+                android:textSize="36sp"
                 android:gravity="center"
-                android:layout_marginEnd="@dimen/spacing_4"
+                android:layout_marginEnd="@dimen/spacing_3"
                 android:contentDescription="@string/station_name"
                 android:importantForAccessibility="no"
-                app:layout_constraintBottom_toBottomOf="@id/textViewStationName"
+                app:layout_constraintBottom_toBottomOf="@id/layoutStationText"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@id/textViewStationName" />
+                app:layout_constraintTop_toTopOf="@id/layoutStationText" />
 
-            <TextView
-                android:id="@+id/textViewStationName"
+            <LinearLayout
+                android:id="@+id/layoutStationText"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Title.Medium"
-                android:textColor="@color/text_primary"
-                android:ellipsize="end"
-                android:maxLines="2"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
                 app:layout_constraintEnd_toStartOf="@id/imageViewPlayIcon"
                 app:layout_constraintStart_toEndOf="@id/textViewStationEmoji"
                 app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <TextView
+                    android:id="@+id/textViewStationName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Title.Medium"
+                    android:textColor="@color/text_primary"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:letterSpacing="0" />
+
+                <TextView
+                    android:id="@+id/textViewStationUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.Body.Small"
+                    android:textColor="@color/text_hint"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:layout_marginTop="2dp" />
+
+            </LinearLayout>
 
             <ImageView
                 android:id="@+id/imageViewPlayIcon"
                 android:layout_width="@dimen/icon_size_medium"
                 android:layout_height="@dimen/icon_size_medium"
-                android:layout_marginStart="@dimen/spacing_3"
-                android:src="@android:drawable/ic_media_play"
+                android:layout_marginStart="@dimen/spacing_4"
+                android:src="@drawable/ic_play_circle"
                 android:tint="@color/glass_accent"
                 android:contentDescription="@string/play"
                 android:importantForAccessibility="yes"
-                app:layout_constraintBottom_toBottomOf="@id/textViewStationName"
+                app:layout_constraintBottom_toBottomOf="@id/layoutStationText"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@id/textViewStationName" />
+                app:layout_constraintTop_toTopOf="@id/layoutStationText" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

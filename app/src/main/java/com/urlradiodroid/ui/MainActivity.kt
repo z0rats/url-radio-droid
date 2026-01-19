@@ -2,6 +2,8 @@ package com.urlradiodroid.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -15,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.urlradiodroid.R
 import com.urlradiodroid.data.AppDatabase
+import com.urlradiodroid.data.RadioStation
 import com.urlradiodroid.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
@@ -22,6 +25,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var adapter: StationAdapter
     private lateinit var database: AppDatabase
+    private var allStations: List<RadioStation> = emptyList()
+    private var filteredStations: List<RadioStation> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,10 +48,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             },
             onStationLongClick = { station ->
-                val intent = Intent(this, AddStationActivity::class.java).apply {
-                    putExtra(AddStationActivity.EXTRA_STATION_ID, station.id)
-                }
-                startActivity(intent)
+                // Long press opens edit (settings) - handled in adapter now
             },
             onStationEdit = { station ->
                 val intent = Intent(this, AddStationActivity::class.java).apply {
@@ -61,8 +63,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.recyclerViewStations.layoutManager = LinearLayoutManager(this)
         binding.recyclerViewStations.adapter = adapter
+        
+        // Optimize RecyclerView for large lists
+        binding.recyclerViewStations.setHasFixedSize(true)
+        binding.recyclerViewStations.setItemViewCacheSize(20)
+        binding.recyclerViewStations.recycledViewPool.setMaxRecycledViews(0, 20)
 
         setupSwipeToEdit()
+        setupSearch()
+        setupScrollListener()
 
         binding.fabAdd.setOnClickListener {
             startActivity(Intent(this, AddStationActivity::class.java))
@@ -70,12 +79,70 @@ class MainActivity : AppCompatActivity() {
 
         loadStations()
     }
+    
+    private fun setupSearch() {
+        binding.editTextSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                filterStations(s?.toString() ?: "")
+            }
+            
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+    
+    private fun setupScrollListener() {
+        binding.recyclerViewStations.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                // If scrolling up (dy < 0) and search has focus, clear focus
+                if (dy < 0 && binding.editTextSearch.hasFocus()) {
+                    binding.editTextSearch.clearFocus()
+                    // Hide keyboard
+                    val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                    imm.hideSoftInputFromWindow(binding.editTextSearch.windowToken, 0)
+                }
+            }
+        })
+    }
+    
+    private fun filterStations(query: String) {
+        val queryLower = query.lowercase().trim()
+        filteredStations = if (queryLower.isEmpty()) {
+            allStations
+        } else {
+            allStations.filter { station ->
+                // Search by name (partial match) OR full URL (exact match)
+                station.name.lowercase().contains(queryLower) ||
+                station.streamUrl.lowercase() == queryLower
+            }
+        }
+        adapter.submitList(filteredStations)
+        updateEmptyState()
+    }
+    
+    private fun updateEmptyState() {
+        val isEmpty = filteredStations.isEmpty()
+        val hasSearchQuery = binding.editTextSearch.text?.toString()?.isNotBlank() == true
+        binding.textViewEmpty.visibility = if (isEmpty && !hasSearchQuery) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
 
     private fun setupWindowInsets() {
         // Apply insets to AppBarLayout
         ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { v, insets ->
             val statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             v.setPadding(v.paddingLeft, statusBars.top, v.paddingRight, v.paddingBottom)
+            insets
+        }
+        
+        // Apply insets to search input if visible
+        ViewCompat.setOnApplyWindowInsetsListener(binding.textInputLayoutSearch) { v, insets ->
+            // Search bar already has proper margins, no additional insets needed
             insets
         }
 
@@ -108,13 +175,26 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadStations() {
         lifecycleScope.launch {
-            val stations = database.radioStationDao().getAllStations()
-            adapter.submitList(stations)
-            binding.textViewEmpty.visibility = if (stations.isEmpty()) {
-                android.view.View.VISIBLE
+            allStations = database.radioStationDao().getAllStations()
+            
+            // Show search bar only if there are more than 4 stations
+            val shouldShowSearch = allStations.size > 4
+            binding.textInputLayoutSearch.visibility = if (shouldShowSearch) {
+                View.VISIBLE
             } else {
-                android.view.View.GONE
+                View.GONE
             }
+            
+            // Apply current search filter or show all stations
+            val currentQuery = binding.editTextSearch.text?.toString() ?: ""
+            if (currentQuery.isBlank()) {
+                filteredStations = allStations
+                adapter.submitList(allStations)
+            } else {
+                filterStations(currentQuery)
+            }
+            
+            updateEmptyState()
         }
     }
 
@@ -125,6 +205,7 @@ class MainActivity : AppCompatActivity() {
         ) {
             private var swipedPosition = RecyclerView.NO_POSITION
             private var swipedViewHolder: StationAdapter.StationViewHolder? = null
+            private var isSwipeInProgress = false
 
             override fun onMove(
                 recyclerView: RecyclerView,
@@ -138,23 +219,9 @@ class MainActivity : AppCompatActivity() {
                 // Don't actually remove item, just show buttons
             }
 
-            override fun onChildDraw(
-                c: android.graphics.Canvas,
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                dX: Float,
-                dY: Float,
-                actionState: Int,
-                isCurrentlyActive: Boolean
-            ) {
-                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
-                    val stationViewHolder = viewHolder as? StationAdapter.StationViewHolder
-                    if (stationViewHolder != null) {
-                        stationViewHolder.onSwipe(dX)
-                    }
-                } else {
-                    super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-                }
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+                isSwipeInProgress = actionState == ItemTouchHelper.ACTION_STATE_SWIPE
             }
 
             override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
@@ -191,7 +258,45 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
-                return ItemTouchHelper.LEFT
+                // Only allow swipe if no item is currently swiped
+                return if (swipedViewHolder == null) {
+                    ItemTouchHelper.LEFT
+                } else {
+                    0 // Disable swipe if another item is swiped
+                }
+            }
+
+            override fun onChildDraw(
+                c: android.graphics.Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                // Only handle swipe if dX is significantly negative (swiping left)
+                // This prevents blocking clicks when user just taps
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX < -20) {
+                    val stationViewHolder = viewHolder as? StationAdapter.StationViewHolder
+                    if (stationViewHolder != null) {
+                        // Limit swipe to button width - don't allow swiping beyond buttons
+                        val swipeButtonsLayout = stationViewHolder.itemView.findViewById<View>(R.id.layoutSwipeButtons)
+                        val maxSwipe = if (swipeButtonsLayout.width > 0) {
+                            -swipeButtonsLayout.width.toFloat()
+                        } else {
+                            // If width not measured yet, use a reasonable default
+                            -200f
+                        }
+                        val limitedDx = dX.coerceAtLeast(maxSwipe)
+                        stationViewHolder.onSwipe(limitedDx)
+                        // Draw the view ourselves to show swipe buttons
+                        super.onChildDraw(c, recyclerView, viewHolder, 0f, dY, actionState, isCurrentlyActive)
+                        return
+                    }
+                }
+                // For normal clicks (dX close to 0), don't interfere
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         })
 
@@ -214,6 +319,8 @@ class MainActivity : AppCompatActivity() {
             try {
                 database.radioStationDao().deleteStation(station.id)
                 Toast.makeText(this@MainActivity, getString(R.string.station_deleted), Toast.LENGTH_SHORT).show()
+                // Clear search when deleting to show updated list
+                binding.editTextSearch.setText("")
                 loadStations()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
