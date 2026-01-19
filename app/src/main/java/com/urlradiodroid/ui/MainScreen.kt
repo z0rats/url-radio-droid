@@ -16,6 +16,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +27,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -44,6 +48,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -137,18 +144,15 @@ class MainActivity : ComponentActivity() {
                     onPlayStation = { station ->
                         playStation(station, viewModel)
                     },
-                    onNowPlayingClick = {
-                        currentPlayingStation?.let { station ->
-                            val intent = Intent(this, PlaybackActivity::class.java).apply {
-                                putExtra(PlaybackActivity.EXTRA_STATION_ID, station.id)
-                                putExtra(PlaybackActivity.EXTRA_STATION_NAME, station.name)
-                                putExtra(PlaybackActivity.EXTRA_STREAM_URL, station.streamUrl)
-                            }
-                            startActivity(intent)
+                    onNowPlayingClick = { station ->
+                        val intent = Intent(this, PlaybackActivity::class.java).apply {
+                            putExtra(PlaybackActivity.EXTRA_STATION_ID, station.id)
+                            putExtra(PlaybackActivity.EXTRA_STATION_NAME, station.name)
+                            putExtra(PlaybackActivity.EXTRA_STREAM_URL, station.streamUrl)
                         }
+                        startActivity(intent)
                     },
                     playbackService = playbackService,
-                    currentPlayingStation = currentPlayingStation,
                     onCurrentPlayingStationChanged = { station ->
                         currentPlayingStation = station
                     }
@@ -236,17 +240,32 @@ fun MainScreen(
     onStationEdit: (RadioStation) -> Unit,
     onStationDelete: (RadioStation) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
-    onNowPlayingClick: () -> Unit,
+    onNowPlayingClick: (RadioStation) -> Unit,
     playbackService: RadioPlaybackService?,
-    currentPlayingStation: RadioStation?,
     onCurrentPlayingStationChanged: (RadioStation?) -> Unit,
     onResume: () -> Unit
 ) {
     val stations by viewModel.filteredStations.collectAsState(initial = emptyList())
+    val allStations by viewModel.stations.collectAsState(initial = emptyList())
     val searchQuery by viewModel.searchQuery.collectAsState()
     val currentPlayingStationId by viewModel.currentPlayingStationId.collectAsState()
 
-    val isPlaying = playbackService?.isPlaying() ?: false
+    var isPlaying by remember { mutableStateOf(false) }
+
+    // Update playing state periodically
+    LaunchedEffect(playbackService) {
+        while (true) {
+            isPlaying = playbackService?.isPlaying() ?: false
+            kotlinx.coroutines.delay(200)
+        }
+    }
+
+    // Find current playing station by ID
+    val currentPlayingStation = remember(currentPlayingStationId, allStations) {
+        currentPlayingStationId?.let { id ->
+            allStations.find { it.id == id }
+        }
+    }
 
     // Reload stations when screen is resumed
     LaunchedEffect(Unit) {
@@ -254,26 +273,22 @@ fun MainScreen(
     }
 
     // Update current playing station from service
-    LaunchedEffect(playbackService, isPlaying, viewModel.stations.value) {
+    LaunchedEffect(playbackService, isPlaying, allStations) {
         val currentMediaId = playbackService?.getPlayer()?.currentMediaItem?.mediaId
         if (currentMediaId != null) {
             // Try to find station by URL
-            val allStations = viewModel.stations.value
             val foundStation = allStations.find { it.streamUrl == currentMediaId }
             if (foundStation != null) {
-                if (currentPlayingStation?.id != foundStation.id) {
+                if (currentPlayingStationId != foundStation.id) {
                     onCurrentPlayingStationChanged(foundStation)
                     viewModel.updateCurrentPlayingStation(foundStation.id)
                 }
             }
-        } else if (!isPlaying && currentPlayingStation != null) {
+        } else if (!isPlaying && currentPlayingStationId != null) {
             // Service stopped - keep station visible for a moment
             // Don't clear immediately to allow user to restart
         }
     }
-
-    // Show bottom bar when station is set
-    val shouldShowBottomBar = currentPlayingStation != null
 
     Box(
         modifier = Modifier
@@ -325,8 +340,15 @@ fun MainScreen(
                                     onPlayStation(station)
                                 }
                             },
-                            onCardClick = onNowPlayingClick,
-                            modifier = Modifier.fillMaxWidth()
+                            onCardClick = {
+                                currentPlayingStation?.let { station ->
+                                    onNowPlayingClick(station)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .windowInsetsPadding(WindowInsets.navigationBars)
+                                .padding(bottom = 8.dp)
                         )
                     }
                 }
@@ -381,6 +403,7 @@ fun MainScreen(
                         state = rememberLazyListState(),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         items(
@@ -396,7 +419,6 @@ fun MainScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .widthIn(max = 600.dp)
-                                    .padding(vertical = 8.dp)
                             )
                         }
                     }
