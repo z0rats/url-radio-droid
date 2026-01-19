@@ -25,7 +25,8 @@
             android:paddingEnd="@dimen/spacing_4"
             app:title="@string/app_name"
             app:titleTextAppearance="@style/TextAppearance.Headline.Medium"
-            app:titleTextColor="@color/text_primary" />
+            app:titleTextColor="@color/text_primary"
+            app:titleCentered="false" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -34,9 +35,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:paddingStart="@dimen/list_padding_horizontal"
+        android:paddingStart="@dimen/spacing_4"
         android:paddingTop="@dimen/spacing_2"
-        android:paddingEnd="@dimen/list_padding_horizontal"
+        android:paddingEnd="@dimen/spacing_4"
         android:paddingBottom="@dimen/spacing_16"
         android:fitsSystemWindows="false"
         android:scrollbars="vertical"

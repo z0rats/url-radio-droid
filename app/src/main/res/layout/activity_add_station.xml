@@ -37,24 +37,32 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="@dimen/spacing_6">
+            android:paddingStart="@dimen/spacing_4"
+            android:paddingTop="@dimen/spacing_6"
+            android:paddingEnd="@dimen/spacing_4"
+            android:paddingBottom="@dimen/spacing_6">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardContainer"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_8"
+                android:maxWidth="@dimen/card_max_width"
                 app:cardBackgroundColor="@color/glass_primary"
                 app:cardCornerRadius="@dimen/card_corner_radius"
                 app:cardElevation="@dimen/card_elevation"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_max="@dimen/card_max_width">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/card_padding">
+                    android:paddingStart="@dimen/spacing_4"
+                    android:paddingTop="@dimen/spacing_4"
+                    android:paddingEnd="@dimen/spacing_4"
+                    android:paddingBottom="@dimen/spacing_4">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/textInputLayoutName"

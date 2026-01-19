@@ -73,19 +73,24 @@
         app:strokeWidth="1dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:rippleColor="@color/md_theme_light_primaryContainer">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="@dimen/card_padding"
+            android:paddingStart="@dimen/spacing_4"
+            android:paddingTop="@dimen/spacing_3"
+            android:paddingEnd="@dimen/spacing_4"
+            android:paddingBottom="@dimen/spacing_3"
             android:minHeight="72dp">
 
             <TextView
                 android:id="@+id/textViewStationEmoji"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="@dimen/icon_size_extra_large"
+                android:layout_height="@dimen/icon_size_extra_large"
                 android:textSize="32sp"
+                android:gravity="center"
                 android:layout_marginEnd="@dimen/spacing_4"
                 android:contentDescription="@string/station_name"
                 android:importantForAccessibility="no"

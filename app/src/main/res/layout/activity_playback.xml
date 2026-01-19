@@ -47,18 +47,23 @@
                 android:layout_marginTop="@dimen/spacing_8"
                 android:layout_marginBottom="@dimen/spacing_4"
                 android:minHeight="200dp"
+                android:maxWidth="@dimen/card_max_width"
                 app:cardBackgroundColor="@color/glass_primary"
                 app:cardCornerRadius="@dimen/card_corner_radius"
                 app:cardElevation="@dimen/card_elevation"
                 app:layout_constraintWidth_percent="0.9"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_max="@dimen/card_max_width">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/spacing_6">
+                    android:paddingStart="@dimen/spacing_6"
+                    android:paddingTop="@dimen/spacing_6"
+                    android:paddingEnd="@dimen/spacing_6"
+                    android:paddingBottom="@dimen/spacing_6">
 
                     <TextView
                         android:id="@+id/textViewStationEmoji"

@@ -57,4 +57,9 @@
     <dimen name="list_item_spacing">12dp</dimen>
     <dimen name="list_padding_horizontal">16dp</dimen>
     <dimen name="list_padding_vertical">24dp</dimen>
+
+    <!-- Adaptive layout constraints -->
+    <dimen name="content_max_width">600dp</dimen>
+    <dimen name="content_max_width_wide">840dp</dimen>
+    <dimen name="card_max_width">520dp</dimen>
 </resources>
