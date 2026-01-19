@@ -36,4 +36,6 @@
     <string name="remove_icon">Remove Icon</string>
     <string name="now_playing">Now playing</string>
     <string name="pause">Pause</string>
+    <string name="playing">Playing</string>
+    <string name="paused">Paused</string>
 </resources>
