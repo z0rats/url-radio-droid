@@ -46,9 +46,9 @@ class StationAdapter(
         fun bind(station: RadioStation) {
             binding.textViewStationName.text = station.name
             // Use custom icon if available, otherwise generate emoji
-            binding.textViewStationEmoji.text = station.customIcon 
+            binding.textViewStationEmoji.text = station.customIcon
                 ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl)
-            
+
             // Always show URL under station name
             binding.textViewStationUrl.text = station.streamUrl
 
@@ -71,7 +71,7 @@ class StationAdapter(
             var isSwipeStarted = false
             var holdStartTime = 0L
             val animationDuration = longPressTimeout.toLong()
-            
+
             fun resetAnimation() {
                 binding.cardStation.animate().cancel()
                 binding.cardStation.scaleX = 1f
@@ -79,27 +79,27 @@ class StationAdapter(
                 binding.cardStation.alpha = 1f
                 binding.cardStation.translationZ = 0f
             }
-            
+
             fun updateProgressAnimation(elapsed: Long) {
                 if (isSwipeStarted || binding.swipeRevealLayout.isOpened) {
                     resetAnimation()
                     return
                 }
-                
+
                 val progress = (elapsed.toFloat() / animationDuration).coerceIn(0f, 1f)
-                
+
                 // Progressive scale: from 1.0 to 0.96 (slight shrink for feedback)
                 val scale = 1f - (progress * 0.04f)
                 binding.cardStation.scaleX = scale
                 binding.cardStation.scaleY = scale
-                
+
                 // Progressive alpha: from 1.0 to 0.88 (subtle fade)
                 binding.cardStation.alpha = 1f - (progress * 0.12f)
-                
+
                 // Progressive translationZ: lift effect (0 to 12dp)
                 val maxLift = 12f * binding.root.context.resources.displayMetrics.density
                 binding.cardStation.translationZ = progress * maxLift
-                
+
                 // Continue animation if not completed
                 if (progress < 1f && !isSwipeStarted) {
                     progressRunnable = Runnable {
@@ -109,7 +109,7 @@ class StationAdapter(
                     binding.cardStation.postDelayed(progressRunnable!!, 16) // ~60fps
                 }
             }
-            
+
             binding.cardStation.setOnTouchListener { view, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_DOWN -> {
@@ -117,12 +117,12 @@ class StationAdapter(
                         initialY = event.y
                         isSwipeStarted = false
                         holdStartTime = System.currentTimeMillis()
-                        
+
                         // Don't start long press if item is swiped
                         if (!binding.swipeRevealLayout.isOpened) {
                             // Start progressive animation
                             updateProgressAnimation(0)
-                            
+
                             longPressRunnable = Runnable {
                                 if (!binding.swipeRevealLayout.isOpened && !isSwipeStarted) {
                                     // Trigger haptic feedback on long press activation
@@ -160,7 +160,7 @@ class StationAdapter(
                         progressRunnable?.let { binding.cardStation.removeCallbacks(it) }
                         progressRunnable = null
                         isSwipeStarted = false
-                        
+
                         // Animate back to normal state
                         binding.cardStation.animate()
                             .scaleX(1f)

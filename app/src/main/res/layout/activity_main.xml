@@ -96,19 +96,36 @@
             app:layout_constraintWidth_percent="1.0"
             tools:listitem="@layout/item_station" />
 
-        <TextView
-            android:id="@+id/textViewEmpty"
+        <LinearLayout
+            android:id="@+id/layoutEmpty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/spacing_6"
-            android:text="@string/no_stations"
-            android:textAppearance="@style/TextAppearance.Body.Large"
-            android:textColor="@color/text_secondary"
+            android:orientation="vertical"
+            android:gravity="center"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📻"
+                android:textSize="64sp"
+                android:layout_marginBottom="@dimen/spacing_4" />
+
+            <TextView
+                android:id="@+id/textViewEmpty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/no_stations"
+                android:textAppearance="@style/TextAppearance.Body.Large"
+                android:textColor="@color/text_secondary"
+                android:gravity="center" />
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

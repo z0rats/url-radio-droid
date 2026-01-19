@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.view.animation.OvershootInterpolator
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -62,6 +63,16 @@ class MainActivity : AppCompatActivity() {
 
         binding.recyclerViewStations.layoutManager = LinearLayoutManager(this)
         binding.recyclerViewStations.adapter = adapter
+
+        // Add smooth animations for list items
+        binding.recyclerViewStations.itemAnimator = jp.wasabeef.recyclerview.animators.SlideInUpAnimator(
+            OvershootInterpolator(1.0f)
+        ).apply {
+            addDuration = 300
+            removeDuration = 250
+            moveDuration = 250
+            changeDuration = 200
+        }
 
         // Optimize RecyclerView for large lists
         binding.recyclerViewStations.setHasFixedSize(true)
@@ -123,10 +134,32 @@ class MainActivity : AppCompatActivity() {
     private fun updateEmptyState() {
         val isEmpty = filteredStations.isEmpty()
         val hasSearchQuery = binding.editTextSearch.text?.toString()?.isNotBlank() == true
-        binding.textViewEmpty.visibility = if (isEmpty && !hasSearchQuery) {
-            View.VISIBLE
-        } else {
-            View.GONE
+        val shouldShow = isEmpty && !hasSearchQuery
+
+        if (shouldShow && binding.layoutEmpty.visibility != View.VISIBLE) {
+            // Animate in with scale and fade
+            binding.layoutEmpty.alpha = 0f
+            binding.layoutEmpty.scaleX = 0.8f
+            binding.layoutEmpty.scaleY = 0.8f
+            binding.layoutEmpty.visibility = View.VISIBLE
+            binding.layoutEmpty.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(400)
+                .setInterpolator(OvershootInterpolator(1.2f))
+                .start()
+        } else if (!shouldShow && binding.layoutEmpty.visibility == View.VISIBLE) {
+            // Animate out
+            binding.layoutEmpty.animate()
+                .alpha(0f)
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .setDuration(200)
+                .withEndAction {
+                    binding.layoutEmpty.visibility = View.GONE
+                }
+                .start()
         }
     }
 
@@ -175,12 +208,23 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             allStations = database.radioStationDao().getAllStations()
 
-            // Show search bar only if there are more than 4 stations
+            // Show search bar only if there are more than 4 stations with animation
             val shouldShowSearch = allStations.size > 4
-            binding.textInputLayoutSearch.visibility = if (shouldShowSearch) {
-                View.VISIBLE
-            } else {
-                View.GONE
+            if (shouldShowSearch && binding.textInputLayoutSearch.visibility != View.VISIBLE) {
+                binding.textInputLayoutSearch.alpha = 0f
+                binding.textInputLayoutSearch.visibility = View.VISIBLE
+                binding.textInputLayoutSearch.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .start()
+            } else if (!shouldShowSearch && binding.textInputLayoutSearch.visibility == View.VISIBLE) {
+                binding.textInputLayoutSearch.animate()
+                    .alpha(0f)
+                    .setDuration(200)
+                    .withEndAction {
+                        binding.textInputLayoutSearch.visibility = View.GONE
+                    }
+                    .start()
             }
 
             // Apply current search filter or show all stations

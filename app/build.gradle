@@ -70,6 +70,9 @@ dependencies {
     // Using JitPack version which should work with AndroidX via Jetifier
     implementation 'com.github.chthai64:swipereveallayout:1.4.0'
 
+    // RecyclerView Animators for smooth list animations
+    implementation 'jp.wasabeef:recyclerview-animators:4.0.2'
+
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
     testImplementation 'androidx.room:room-testing:2.8.4'
