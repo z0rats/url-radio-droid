@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardNowPlaying"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="0dp"
+    android:layout_marginEnd="0dp"
+    android:layout_marginBottom="0dp"
+    android:minHeight="64dp"
+    android:background="@drawable/bg_bottom_player"
+    android:elevation="@dimen/card_elevation"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/spacing_4"
+        android:paddingTop="@dimen/spacing_3"
+        android:paddingEnd="@dimen/spacing_4"
+        android:paddingBottom="@dimen/spacing_3"
+        android:minHeight="64dp">
+
+        <TextView
+            android:id="@+id/textViewNowPlayingEmoji"
+            android:layout_width="@dimen/icon_size_medium"
+            android:layout_height="@dimen/icon_size_medium"
+            android:textSize="24sp"
+            android:gravity="center"
+            android:layout_marginEnd="@dimen/spacing_3"
+            android:contentDescription="@string/station_name"
+            android:importantForAccessibility="no"
+            app:layout_constraintBottom_toBottomOf="@id/layoutNowPlayingText"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/layoutNowPlayingText" />
+
+        <LinearLayout
+            android:id="@+id/layoutNowPlayingText"
+            android:layout_width="220dp"
+            android:layout_height="36dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/imageViewNowPlayingControl"
+            app:layout_constraintStart_toEndOf="@id/textViewNowPlayingEmoji"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/textViewNowPlayingName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:letterSpacing="0"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.Body.Large"
+                android:textColor="@color/text_primary" />
+
+            <TextView
+                android:id="@+id/textViewNowPlayingStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="@string/now_playing"
+                android:textAppearance="@style/TextAppearance.Body.Small"
+                android:textColor="@color/text_hint" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/imageViewNowPlayingControl"
+            android:layout_width="@dimen/icon_size_extra_large"
+            android:layout_height="@dimen/icon_size_extra_large"
+            android:layout_marginStart="@dimen/spacing_3"
+            android:src="@drawable/ic_play_circle"
+            android:tint="@color/glass_accent"
+            android:contentDescription="@string/play"
+            android:importantForAccessibility="yes"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:layout_constraintBottom_toBottomOf="@id/layoutNowPlayingText"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/layoutNowPlayingText" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

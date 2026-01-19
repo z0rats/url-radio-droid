@@ -34,4 +34,6 @@
     <string name="choose_emoji">Choose Emoji</string>
     <string name="upload_image">Upload Image</string>
     <string name="remove_icon">Remove Icon</string>
+    <string name="now_playing">Now playing</string>
+    <string name="pause">Pause</string>
 </resources>

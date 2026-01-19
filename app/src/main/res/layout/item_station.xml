@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.chauthai.swipereveallayout.SwipeRevealLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/swipeRevealLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -92,7 +93,7 @@
                 android:layout_height="@dimen/icon_size_extra_large"
                 android:textSize="36sp"
                 android:gravity="center"
-                android:layout_marginEnd="@dimen/spacing_3"
+                android:layout_marginEnd="@dimen/spacing_4"
                 android:contentDescription="@string/station_name"
                 android:importantForAccessibility="no"
                 app:layout_constraintBottom_toBottomOf="@id/layoutStationText"
@@ -101,46 +102,49 @@
 
             <LinearLayout
                 android:id="@+id/layoutStationText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:layout_width="250dp"
+                android:layout_height="40dp"
                 android:gravity="center_vertical"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/imageViewPlayIcon"
                 app:layout_constraintStart_toEndOf="@id/textViewStationEmoji"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent">
+                app:layout_constraintTop_toTopOf="parent">
 
                 <TextView
                     android:id="@+id/textViewStationName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Title.Medium"
-                    android:textColor="@color/text_primary"
                     android:ellipsize="end"
+                    android:letterSpacing="0"
                     android:maxLines="1"
-                    android:letterSpacing="0" />
+                    android:textAppearance="@style/TextAppearance.Title.Medium"
+                    android:textColor="@color/text_primary" />
 
                 <TextView
                     android:id="@+id/textViewStationUrl"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Body.Small"
-                    android:textColor="@color/text_hint"
+                    android:layout_marginTop="@dimen/spacing_1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:layout_marginTop="2dp" />
+                    android:textAppearance="@style/TextAppearance.Body.Small"
+                    android:textColor="@color/text_hint" />
 
             </LinearLayout>
 
             <ImageView
                 android:id="@+id/imageViewPlayIcon"
-                android:layout_width="@dimen/icon_size_medium"
-                android:layout_height="@dimen/icon_size_medium"
-                android:layout_marginStart="@dimen/spacing_4"
+                android:layout_width="@dimen/icon_size_large"
+                android:layout_height="@dimen/icon_size_large"
+                android:layout_marginStart="@dimen/spacing_5"
                 android:src="@drawable/ic_play_circle"
                 android:tint="@color/glass_accent"
                 android:contentDescription="@string/play"
                 android:importantForAccessibility="yes"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 app:layout_constraintBottom_toBottomOf="@id/layoutStationText"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/layoutStationText" />

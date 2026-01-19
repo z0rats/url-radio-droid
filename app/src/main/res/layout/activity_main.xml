@@ -142,4 +142,13 @@
         app:icon="@android:drawable/ic_input_add"
         app:iconTint="@color/md_theme_light_onPrimary" />
 
+    <include
+        android:id="@+id/includeNowPlaying"
+        layout="@layout/bottom_now_playing"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginEnd="@dimen/fab_margin"
+        android:visibility="gone" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

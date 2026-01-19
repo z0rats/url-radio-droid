@@ -13,11 +13,36 @@ import com.urlradiodroid.databinding.ItemStationBinding
 import com.urlradiodroid.util.EmojiGenerator
 
 class StationAdapter(
-    private val onStationClick: (RadioStation) -> Unit,
+    private val onPlayClick: (RadioStation) -> Unit,
     private val onStationLongClick: (RadioStation) -> Unit,
     private val onStationEdit: (RadioStation) -> Unit,
-    private val onStationDelete: (RadioStation) -> Unit
+    private val onStationDelete: (RadioStation) -> Unit,
+    private var currentPlayingStationId: Long? = null
 ) : ListAdapter<RadioStation, StationAdapter.StationViewHolder>(StationDiffCallback()) {
+
+    fun updateCurrentPlayingStation(stationId: Long?) {
+        val oldId = currentPlayingStationId
+        if (oldId == stationId) {
+            return // No change needed
+        }
+        currentPlayingStationId = stationId
+        // Notify changed for affected items
+        if (oldId != null) {
+            val oldPosition = currentList.indexOfFirst { it.id == oldId }
+            if (oldPosition >= 0) {
+                notifyItemChanged(oldPosition)
+            }
+        }
+        if (stationId != null) {
+            val newPosition = currentList.indexOfFirst { it.id == stationId }
+            if (newPosition >= 0) {
+                notifyItemChanged(newPosition)
+            }
+        } else if (oldId != null) {
+            // If we're clearing the playing station, notify all items to refresh
+            notifyDataSetChanged()
+        }
+    }
 
     private val viewBinderHelper = ViewBinderHelper().apply {
         setOpenOnlyOne(true) // Only one item can be swiped open at a time
@@ -52,14 +77,26 @@ class StationAdapter(
             // Always show URL under station name
             binding.textViewStationUrl.text = station.streamUrl
 
-            // Click listener for card - open station
+            // Update play/stop icon based on playing state
+            val isCurrentlyPlaying = adapter.currentPlayingStationId == station.id
+            if (isCurrentlyPlaying) {
+                binding.imageViewPlayIcon.setImageResource(com.urlradiodroid.R.drawable.ic_stop_circle)
+                binding.imageViewPlayIcon.contentDescription = binding.root.context.getString(com.urlradiodroid.R.string.stop)
+            } else {
+                binding.imageViewPlayIcon.setImageResource(com.urlradiodroid.R.drawable.ic_play_circle)
+                binding.imageViewPlayIcon.contentDescription = binding.root.context.getString(com.urlradiodroid.R.string.play)
+            }
+
+            // Click listener for card - only close swipe if open
             binding.cardStation.setOnClickListener {
-                // Close swipe if open
                 if (binding.swipeRevealLayout.isOpened) {
                     binding.swipeRevealLayout.close(true)
-                } else {
-                    onStationClick(station)
                 }
+            }
+
+            // Play button click listener - start/stop playback
+            binding.imageViewPlayIcon.setOnClickListener {
+                onPlayClick(station)
             }
 
             // Long press for edit with progressive animation
