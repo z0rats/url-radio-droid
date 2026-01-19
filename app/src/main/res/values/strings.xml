@@ -30,4 +30,8 @@
     <string name="cancel">Cancel</string>
     <string name="station_deleted">Station deleted</string>
     <string name="search_stations">Search stations</string>
+    <string name="station_icon">Station Icon</string>
+    <string name="choose_emoji">Choose Emoji</string>
+    <string name="upload_image">Upload Image</string>
+    <string name="remove_icon">Remove Icon</string>
 </resources>

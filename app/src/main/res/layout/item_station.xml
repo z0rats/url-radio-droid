@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.chauthai.swipereveallayout.SwipeRevealLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRevealLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/list_item_spacing"
-    android:minHeight="80dp"
-    android:clickable="false"
-    android:focusable="false">
+    app:dragEdge="right"
+    app:mode="same_level"
+    app:minDistRequestDisallowParent="0dp">
 
-    <!-- Swipe buttons background -->
+    <!-- Secondary view: Swipe buttons (revealed when swiped from right) -->
     <LinearLayout
         android:id="@+id/layoutSwipeButtons"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:layout_gravity="end|center_vertical"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingStart="@dimen/spacing_3"
         android:paddingEnd="@dimen/spacing_3"
         android:background="@android:color/transparent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:minHeight="80dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonEdit"
@@ -59,7 +59,7 @@
 
     </LinearLayout>
 
-    <!-- Main content card -->
+    <!-- Main view: Station card (swiped to reveal buttons) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardStation"
         android:layout_width="match_parent"
@@ -67,17 +67,14 @@
         android:minHeight="80dp"
         android:foreground="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
         android:contentDescription="@string/app_name"
         app:cardBackgroundColor="@color/glass_primary"
         app:cardCornerRadius="@dimen/card_corner_radius"
         app:cardElevation="@dimen/card_elevation"
         app:strokeColor="@color/glass_secondary"
         app:strokeWidth="1dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         app:rippleColor="@android:color/transparent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -152,4 +149,4 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</com.chauthai.swipereveallayout.SwipeRevealLayout>

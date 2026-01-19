@@ -66,14 +66,14 @@
 
     <style name="TextAppearance.Title.Medium" parent="TextAppearance.Title">
         <item name="android:textSize">16sp</item>
-        <item name="android:letterSpacing">0.15</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">normal</item>
     </style>
 
     <style name="TextAppearance.Title.Small" parent="TextAppearance.Title">
         <item name="android:textSize">14sp</item>
-        <item name="android:letterSpacing">0.1</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">normal</item>
     </style>
@@ -81,21 +81,21 @@
     <!-- Label styles -->
     <style name="TextAppearance.Label.Large" parent="TextAppearance.Label">
         <item name="android:textSize">14sp</item>
-        <item name="android:letterSpacing">0.1</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">normal</item>
     </style>
 
     <style name="TextAppearance.Label.Medium" parent="TextAppearance.Label">
         <item name="android:textSize">12sp</item>
-        <item name="android:letterSpacing">0.5</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">normal</item>
     </style>
 
     <style name="TextAppearance.Label.Small" parent="TextAppearance.Label">
         <item name="android:textSize">11sp</item>
-        <item name="android:letterSpacing">0.5</item>
+        <item name="android:letterSpacing">0</item>
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textStyle">normal</item>
     </style>

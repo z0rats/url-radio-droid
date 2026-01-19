@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.urlradiodroid.R
@@ -63,13 +62,12 @@ class MainActivity : AppCompatActivity() {
 
         binding.recyclerViewStations.layoutManager = LinearLayoutManager(this)
         binding.recyclerViewStations.adapter = adapter
-        
+
         // Optimize RecyclerView for large lists
         binding.recyclerViewStations.setHasFixedSize(true)
         binding.recyclerViewStations.setItemViewCacheSize(20)
         binding.recyclerViewStations.recycledViewPool.setMaxRecycledViews(0, 20)
 
-        setupSwipeToEdit()
         setupSearch()
         setupScrollListener()
 
@@ -79,19 +77,19 @@ class MainActivity : AppCompatActivity() {
 
         loadStations()
     }
-    
+
     private fun setupSearch() {
         binding.editTextSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 filterStations(s?.toString() ?: "")
             }
-            
+
             override fun afterTextChanged(s: Editable?) {}
         })
     }
-    
+
     private fun setupScrollListener() {
         binding.recyclerViewStations.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -106,7 +104,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
     }
-    
+
     private fun filterStations(query: String) {
         val queryLower = query.lowercase().trim()
         filteredStations = if (queryLower.isEmpty()) {
@@ -121,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         adapter.submitList(filteredStations)
         updateEmptyState()
     }
-    
+
     private fun updateEmptyState() {
         val isEmpty = filteredStations.isEmpty()
         val hasSearchQuery = binding.editTextSearch.text?.toString()?.isNotBlank() == true
@@ -139,7 +137,7 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(v.paddingLeft, statusBars.top, v.paddingRight, v.paddingBottom)
             insets
         }
-        
+
         // Apply insets to search input if visible
         ViewCompat.setOnApplyWindowInsetsListener(binding.textInputLayoutSearch) { v, insets ->
             // Search bar already has proper margins, no additional insets needed
@@ -176,7 +174,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadStations() {
         lifecycleScope.launch {
             allStations = database.radioStationDao().getAllStations()
-            
+
             // Show search bar only if there are more than 4 stations
             val shouldShowSearch = allStations.size > 4
             binding.textInputLayoutSearch.visibility = if (shouldShowSearch) {
@@ -184,7 +182,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 View.GONE
             }
-            
+
             // Apply current search filter or show all stations
             val currentQuery = binding.editTextSearch.text?.toString() ?: ""
             if (currentQuery.isBlank()) {
@@ -193,115 +191,11 @@ class MainActivity : AppCompatActivity() {
             } else {
                 filterStations(currentQuery)
             }
-            
+
             updateEmptyState()
         }
     }
 
-    private fun setupSwipeToEdit() {
-        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
-            0,
-            ItemTouchHelper.LEFT
-        ) {
-            private var swipedPosition = RecyclerView.NO_POSITION
-            private var swipedViewHolder: StationAdapter.StationViewHolder? = null
-            private var isSwipeInProgress = false
-
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean {
-                return false
-            }
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                // Don't actually remove item, just show buttons
-            }
-
-            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
-                super.onSelectedChanged(viewHolder, actionState)
-                isSwipeInProgress = actionState == ItemTouchHelper.ACTION_STATE_SWIPE
-            }
-
-            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
-                super.clearView(recyclerView, viewHolder)
-                val stationViewHolder = viewHolder as? StationAdapter.StationViewHolder
-                if (stationViewHolder != null) {
-                    // Check if swipe was enough to show buttons
-                    val swipeButtonsLayout = stationViewHolder.itemView.findViewById<View>(R.id.layoutSwipeButtons)
-                    val cardStation = stationViewHolder.itemView.findViewById<View>(R.id.cardStation)
-
-                    if (swipeButtonsLayout.width > 0) {
-                        val swipeButtonsWidth = swipeButtonsLayout.width
-                        val currentTranslation = cardStation.translationX
-                        if (currentTranslation < -swipeButtonsWidth / 2) {
-                            // Keep buttons visible - animate to full swipe
-                            cardStation.animate()
-                                .translationX(-swipeButtonsWidth.toFloat())
-                                .setDuration(200)
-                                .start()
-                            swipeButtonsLayout.visibility = View.VISIBLE
-                        } else {
-                            // Hide buttons - animate back
-                            cardStation.animate()
-                                .translationX(0f)
-                                .setDuration(200)
-                                .start()
-                            swipeButtonsLayout.visibility = View.GONE
-                        }
-                    } else {
-                        // Layout not measured yet, use onSwipe with 0 to handle it
-                        stationViewHolder.onSwipe(0f)
-                    }
-                }
-            }
-
-            override fun getSwipeDirs(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
-                // Only allow swipe if no item is currently swiped
-                return if (swipedViewHolder == null) {
-                    ItemTouchHelper.LEFT
-                } else {
-                    0 // Disable swipe if another item is swiped
-                }
-            }
-
-            override fun onChildDraw(
-                c: android.graphics.Canvas,
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                dX: Float,
-                dY: Float,
-                actionState: Int,
-                isCurrentlyActive: Boolean
-            ) {
-                // Only handle swipe if dX is significantly negative (swiping left)
-                // This prevents blocking clicks when user just taps
-                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX < -20) {
-                    val stationViewHolder = viewHolder as? StationAdapter.StationViewHolder
-                    if (stationViewHolder != null) {
-                        // Limit swipe to button width - don't allow swiping beyond buttons
-                        val swipeButtonsLayout = stationViewHolder.itemView.findViewById<View>(R.id.layoutSwipeButtons)
-                        val maxSwipe = if (swipeButtonsLayout.width > 0) {
-                            -swipeButtonsLayout.width.toFloat()
-                        } else {
-                            // If width not measured yet, use a reasonable default
-                            -200f
-                        }
-                        val limitedDx = dX.coerceAtLeast(maxSwipe)
-                        stationViewHolder.onSwipe(limitedDx)
-                        // Draw the view ourselves to show swipe buttons
-                        super.onChildDraw(c, recyclerView, viewHolder, 0f, dY, actionState, isCurrentlyActive)
-                        return
-                    }
-                }
-                // For normal clicks (dX close to 0), don't interfere
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
-            }
-        })
-
-        itemTouchHelper.attachToRecyclerView(binding.recyclerViewStations)
-    }
 
     private fun showDeleteConfirmation(station: com.urlradiodroid.data.RadioStation) {
         AlertDialog.Builder(this)

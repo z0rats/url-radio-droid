@@ -125,12 +125,14 @@ class AddStationActivity : AppCompatActivity() {
                     RadioStation(
                         id = editingStationId!!,
                         name = name,
-                        streamUrl = url
+                        streamUrl = url,
+                        customIcon = null // Always use auto-generated emoji
                     )
                 } else {
                     RadioStation(
                         name = name,
-                        streamUrl = url
+                        streamUrl = url,
+                        customIcon = null // Always use auto-generated emoji
                     )
                 }
 
