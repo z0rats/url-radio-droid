@@ -29,19 +29,17 @@ jobs:
         run: |
           if [ ! -f gradlew ]; then
             echo "Creating gradlew script"
-            cat > gradlew << 'GRADLEW_SCRIPT'
-#!/bin/sh
-GRADLE_OPTS="-Dorg.gradle.daemon=false"
-WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
-if [ ! -f "$WRAPPER_JAR" ]; then
-  mkdir -p gradle/wrapper
-  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
-  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
-  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \
-  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"
-fi
-exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"
-GRADLEW_SCRIPT
+            printf '#!/bin/sh\n' > gradlew
+            printf 'GRADLE_OPTS="-Dorg.gradle.daemon=false"\n' >> gradlew
+            printf 'WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"\n' >> gradlew
+            printf 'if [ ! -f "$WRAPPER_JAR" ]; then\n' >> gradlew
+            printf '  mkdir -p gradle/wrapper\n' >> gradlew
+            printf '  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed '\''s/.*gradle-\\([0-9.]*\\)-\\.*/\\1/'\'')\n' >> gradlew
+            printf '  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."\n' >> gradlew
+            printf '  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \\\n' >> gradlew
+            printf '  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"\n' >> gradlew
+            printf 'fi\n' >> gradlew
+            printf 'exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"\n' >> gradlew
             chmod +x gradlew
           else
             chmod +x gradlew
@@ -88,19 +86,17 @@ GRADLEW_SCRIPT
         run: |
           if [ ! -f gradlew ]; then
             echo "Creating gradlew script"
-            cat > gradlew << 'GRADLEW_SCRIPT'
-#!/bin/sh
-GRADLE_OPTS="-Dorg.gradle.daemon=false"
-WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
-if [ ! -f "$WRAPPER_JAR" ]; then
-  mkdir -p gradle/wrapper
-  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
-  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
-  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \
-  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"
-fi
-exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"
-GRADLEW_SCRIPT
+            printf '#!/bin/sh\n' > gradlew
+            printf 'GRADLE_OPTS="-Dorg.gradle.daemon=false"\n' >> gradlew
+            printf 'WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"\n' >> gradlew
+            printf 'if [ ! -f "$WRAPPER_JAR" ]; then\n' >> gradlew
+            printf '  mkdir -p gradle/wrapper\n' >> gradlew
+            printf '  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed '\''s/.*gradle-\\([0-9.]*\\)-\\.*/\\1/'\'')\n' >> gradlew
+            printf '  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."\n' >> gradlew
+            printf '  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \\\n' >> gradlew
+            printf '  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"\n' >> gradlew
+            printf 'fi\n' >> gradlew
+            printf 'exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"\n' >> gradlew
             chmod +x gradlew
           else
             chmod +x gradlew
@@ -138,19 +134,17 @@ GRADLEW_SCRIPT
         run: |
           if [ ! -f gradlew ]; then
             echo "Creating gradlew script"
-            cat > gradlew << 'GRADLEW_SCRIPT'
-#!/bin/sh
-GRADLE_OPTS="-Dorg.gradle.daemon=false"
-WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
-if [ ! -f "$WRAPPER_JAR" ]; then
-  mkdir -p gradle/wrapper
-  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
-  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
-  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \
-  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"
-fi
-exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"
-GRADLEW_SCRIPT
+            printf '#!/bin/sh\n' > gradlew
+            printf 'GRADLE_OPTS="-Dorg.gradle.daemon=false"\n' >> gradlew
+            printf 'WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"\n' >> gradlew
+            printf 'if [ ! -f "$WRAPPER_JAR" ]; then\n' >> gradlew
+            printf '  mkdir -p gradle/wrapper\n' >> gradlew
+            printf '  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed '\''s/.*gradle-\\([0-9.]*\\)-\\.*/\\1/'\'')\n' >> gradlew
+            printf '  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."\n' >> gradlew
+            printf '  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \\\n' >> gradlew
+            printf '  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"\n' >> gradlew
+            printf 'fi\n' >> gradlew
+            printf 'exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"\n' >> gradlew
             chmod +x gradlew
           else
             chmod +x gradlew
