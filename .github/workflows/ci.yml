@@ -10,24 +10,53 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up JDK 24
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '24'
+          java-version: '21'
           cache: 'gradle'
-      
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "Creating gradlew script"
+            cat > gradlew << 'GRADLEW_SCRIPT'
+#!/bin/sh
+GRADLE_OPTS="-Dorg.gradle.daemon=false"
+WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
+if [ ! -f "$WRAPPER_JAR" ]; then
+  mkdir -p gradle/wrapper
+  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
+  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
+  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \
+  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"
+fi
+exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"
+GRADLEW_SCRIPT
+            chmod +x gradlew
+          else
+            chmod +x gradlew
+          fi
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            mkdir -p gradle/wrapper
+            GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
+            echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
+            curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar || \
+            curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          fi
+
       - name: Run unit tests
         run: ./gradlew test --no-daemon
-      
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -35,52 +64,108 @@ jobs:
           name: test-results
           path: app/build/test-results/
           retention-days: 7
+          if-no-files-found: ignore
 
   lint:
     name: Kotlin Lint
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up JDK 24
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '24'
+          java-version: '21'
           cache: 'gradle'
-      
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "Creating gradlew script"
+            cat > gradlew << 'GRADLEW_SCRIPT'
+#!/bin/sh
+GRADLE_OPTS="-Dorg.gradle.daemon=false"
+WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
+if [ ! -f "$WRAPPER_JAR" ]; then
+  mkdir -p gradle/wrapper
+  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
+  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
+  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \
+  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"
+fi
+exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"
+GRADLEW_SCRIPT
+            chmod +x gradlew
+          else
+            chmod +x gradlew
+          fi
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            mkdir -p gradle/wrapper
+            GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
+            echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
+            curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar || \
+            curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          fi
+
       - name: Run ktlint check
         run: ./gradlew ktlintCheck --no-daemon
-      
-      - name: Run ktlint format check
-        run: ./gradlew ktlintFormat --no-daemon || true
 
   build:
     name: Build Project
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up JDK 24
+
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '24'
+          java-version: '21'
           cache: 'gradle'
-      
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-      
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "Creating gradlew script"
+            cat > gradlew << 'GRADLEW_SCRIPT'
+#!/bin/sh
+GRADLE_OPTS="-Dorg.gradle.daemon=false"
+WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
+if [ ! -f "$WRAPPER_JAR" ]; then
+  mkdir -p gradle/wrapper
+  GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
+  echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
+  curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR" || \
+  curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o "$WRAPPER_JAR"
+fi
+exec java $GRADLE_OPTS -jar "$WRAPPER_JAR" "$@"
+GRADLEW_SCRIPT
+            chmod +x gradlew
+          else
+            chmod +x gradlew
+          fi
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            mkdir -p gradle/wrapper
+            GRADLE_VERSION=$(grep "distributionUrl" gradle/wrapper/gradle-wrapper.properties | sed 's/.*gradle-\([0-9.]*\)-.*/\1/')
+            echo "Downloading Gradle wrapper jar for version ${GRADLE_VERSION}..."
+            curl -L "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar || \
+            curl -L "https://github.com/gradle/gradle/raw/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          fi
+
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
-      
+
       - name: Upload APK
         if: always()
         uses: actions/upload-artifact@v4
@@ -88,3 +173,4 @@ jobs:
           name: app-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
+          if-no-files-found: ignore
