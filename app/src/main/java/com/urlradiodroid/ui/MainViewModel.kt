@@ -51,6 +51,8 @@ class MainViewModel(private val database: AppDatabase) : ViewModel() {
         _currentPlayingStationId.value = stationId
     }
 
+    fun getCurrentPlayingStationId(): Long? = _currentPlayingStationId.value
+
     fun deleteStation(stationId: Long) {
         viewModelScope.launch {
             database.radioStationDao().deleteStation(stationId)

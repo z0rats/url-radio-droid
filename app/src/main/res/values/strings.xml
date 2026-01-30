@@ -38,4 +38,7 @@
     <string name="pause">Pause</string>
     <string name="playing">Playing</string>
     <string name="paused">Paused</string>
+    <string name="starting">Starting…</string>
+    <string name="connection_failed">Connection failed</string>
+    <string name="close">Close</string>
 </resources>

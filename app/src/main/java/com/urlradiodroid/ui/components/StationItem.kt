@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStation
@@ -53,7 +55,10 @@ import com.urlradiodroid.util.EmojiGenerator
 @Composable
 fun StationItem(
     station: RadioStation,
+    isActive: Boolean,
     isPlaying: Boolean,
+    isStarting: Boolean = false,
+    isStartError: Boolean = false,
     onPlayClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -103,7 +108,10 @@ fun StationItem(
 
         StationCard(
             station = station,
+            isActive = isActive,
             isPlaying = isPlaying,
+            isStarting = isStarting,
+            isStartError = isStartError,
             onPlayClick = {
                 if (isSwipeRevealed) {
                     isSwipeRevealed = false
@@ -207,18 +215,32 @@ private fun SwipeActionsBackground(
 @Composable
 private fun StationCard(
     station: RadioStation,
+    isActive: Boolean,
     isPlaying: Boolean,
+    isStarting: Boolean,
+    isStartError: Boolean,
     onPlayClick: () -> Unit,
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val containerColor = if (isActive) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (isActive) Modifier.border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(24.dp)
+                ) else Modifier
+            )
             .clickable(onClick = onCardClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
@@ -248,7 +270,12 @@ private fun StationCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = station.streamUrl,
+                    text = when {
+                        isActive && isStartError -> stringResource(R.string.connection_failed)
+                        isActive && isPlaying -> stringResource(R.string.playing)
+                        isActive && isStarting -> stringResource(R.string.starting)
+                        else -> station.streamUrl
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -272,7 +299,7 @@ private fun PlayPauseIcon(
     modifier: Modifier = Modifier
 ) {
     val iconRes = if (isPlaying) {
-        R.drawable.ic_stop_circle
+        R.drawable.ic_pause_circle
     } else {
         R.drawable.ic_play_circle
     }
@@ -284,7 +311,7 @@ private fun PlayPauseIcon(
     ) {
         Image(
             painter = painterResource(iconRes),
-            contentDescription = if (isPlaying) "Stop" else "Play",
+            contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
             modifier = Modifier.size(32.dp),
             colorFilter = ColorFilter.tint(glass_accent)
         )

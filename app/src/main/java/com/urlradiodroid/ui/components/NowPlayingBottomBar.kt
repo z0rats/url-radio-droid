@@ -1,28 +1,46 @@
 package com.urlradiodroid.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStation
@@ -30,78 +48,292 @@ import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.text_hint
 import com.urlradiodroid.ui.theme.text_primary
 import com.urlradiodroid.util.EmojiGenerator
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
+enum class PlaybackStatus { PLAYING, PAUSED, STARTING, ERROR }
 
 @Composable
 fun NowPlayingBottomBar(
     station: RadioStation?,
-    isPlaying: Boolean,
+    stations: List<RadioStation>,
+    playbackStatus: PlaybackStatus,
     onPlayPauseClick: () -> Unit,
     onCardClick: () -> Unit,
+    onSwitchStation: (RadioStation) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (station == null) return
 
-    Card(
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val offsetPx = remember { Animatable(0f) }
+
+    val currentIndex = stations.indexOfFirst { it.id == station.id }
+    val prevStation = if (currentIndex > 0) stations[currentIndex - 1] else null
+    val nextStation = if (currentIndex in 0 until stations.size - 1) stations[currentIndex + 1] else null
+
+    val switchThresholdPx = with(density) { 72.dp.toPx() }
+    val maxDragPx = with(density) { 180.dp.toPx() }
+    val overscrollMaxPx = with(density) { 48.dp.toPx() }
+    val resistanceFactor = 0.3f
+
+    val bounceSpec = spring<Float>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
+    )
+    val slideSpec = tween<Float>(durationMillis = 280)
+
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .clickable(onClick = onCardClick),
+            .height(80.dp)
+            .clipToBounds()
+    ) {
+        val cardWidth = maxWidth
+        val gap = 14.dp
+        val cardWidthPx = with(density) { cardWidth.toPx() }.toInt()
+        val gapPx = with(density) { gap.toPx() }.toInt()
+        val targetForPrevPx = (cardWidthPx + gapPx).toFloat()
+        val targetForNextPx = -(cardWidthPx + gapPx).toFloat()
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .pointerInput(station.id, prevStation?.id, nextStation?.id, cardWidthPx, gapPx) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            val current = offsetPx.value
+                            when {
+                                current > switchThresholdPx && prevStation != null -> scope.launch {
+                                    offsetPx.animateTo(targetForPrevPx, slideSpec)
+                                    onSwitchStation(prevStation)
+                                    offsetPx.snapTo(0f)
+                                }
+                                current < -switchThresholdPx && nextStation != null -> scope.launch {
+                                    offsetPx.animateTo(targetForNextPx, slideSpec)
+                                    onSwitchStation(nextStation)
+                                    offsetPx.snapTo(0f)
+                                }
+                                else -> scope.launch {
+                                    offsetPx.animateTo(0f, bounceSpec)
+                                }
+                            }
+                        }
+                    ) { _, dragAmount ->
+                        val hasPrev = prevStation != null
+                        val hasNext = nextStation != null
+                        val effectiveAmount = when {
+                            dragAmount > 0 -> if (hasPrev) dragAmount else dragAmount * resistanceFactor
+                            else -> if (hasNext) dragAmount else dragAmount * resistanceFactor
+                        }
+                        val newOffset = offsetPx.value + effectiveAmount
+                        val clamped = when {
+                            hasPrev && hasNext -> newOffset.coerceIn(-maxDragPx, maxDragPx)
+                            hasPrev -> newOffset.coerceIn(-overscrollMaxPx, maxDragPx)
+                            hasNext -> newOffset.coerceIn(-maxDragPx, overscrollMaxPx)
+                            else -> newOffset.coerceIn(-overscrollMaxPx, overscrollMaxPx)
+                        }
+                        scope.launch { offsetPx.snapTo(clamped) }
+                    }
+                }
+        ) {
+        SubcomposeLayout(
+            modifier = Modifier.clickable(onClick = onCardClick)
+        ) { constraints ->
+            val rowWidth = cardWidthPx * 3 + gapPx * 2
+            val rowConstraints = Constraints.fixed(rowWidth, constraints.maxHeight)
+            val rowPlaceable = subcompose("row") {
+                Row(
+                    modifier = Modifier.height(80.dp),
+                    horizontalArrangement = Arrangement.spacedBy(gap)
+                ) {
+                    Box(modifier = Modifier.width(cardWidth).height(80.dp)) {
+                        if (prevStation != null) {
+                            MiniPlayerCardPreview(station = prevStation)
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(cardWidth)
+                            .height(80.dp)
+                            .clickable(onClick = onCardClick)
+                    ) {
+                        MiniPlayerCardFull(
+                            station = station,
+                            playbackStatus = playbackStatus,
+                            onPlayPauseClick = onPlayPauseClick
+                        )
+                    }
+                    Box(modifier = Modifier.width(cardWidth).height(80.dp)) {
+                        if (nextStation != null) {
+                            MiniPlayerCardPreview(station = nextStation)
+                        }
+                    }
+                }
+            }.map { it.measure(rowConstraints) }.first()
+
+            val offsetX = (-(cardWidthPx + gapPx) + offsetPx.value).roundToInt()
+            layout(constraints.maxWidth, rowPlaceable.height) {
+                rowPlaceable.placeRelative(offsetX, 0)
+            }
+        }
+        }
+    }
+}
+
+@Composable
+private fun MiniPlayerCardPreview(station: RadioStation) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
         ),
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = station.customIcon
-                    ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.size(24.dp)
-            )
-
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = station.customIcon
+                        ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(1.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = station.name,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = text_primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (isPlaying) {
-                        stringResource(R.string.playing)
-                    } else {
-                        stringResource(R.string.paused)
-                    },
+                    text = stringResource(R.string.paused),
                     style = MaterialTheme.typography.bodySmall,
                     color = text_hint
                 )
             }
+            Box(modifier = Modifier.size(52.dp))
+            Box(modifier = Modifier.size(36.dp))
+        }
+    }
+}
+
+@Composable
+private fun MiniPlayerCardFull(
+    station: RadioStation,
+    playbackStatus: PlaybackStatus,
+    onPlayPauseClick: () -> Unit
+) {
+    val isPlaying = playbackStatus == PlaybackStatus.PLAYING
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+        ),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = station.customIcon
+                        ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = station.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = text_primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (playbackStatus == PlaybackStatus.PLAYING) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(glass_accent)
+                            )
+                        }
+                        Text(
+                            text = when (playbackStatus) {
+                                PlaybackStatus.PLAYING -> stringResource(R.string.playing)
+                                PlaybackStatus.STARTING -> stringResource(R.string.starting)
+                                PlaybackStatus.PAUSED -> stringResource(R.string.paused)
+                                PlaybackStatus.ERROR -> stringResource(R.string.connection_failed)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = text_hint
+                        )
+                    }
+                }
+            }
 
             Box(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clickable(onClick = onPlayPauseClick)
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    .clickable(onClick = onPlayPauseClick),
+                contentAlignment = Alignment.Center
             ) {
-                val iconRes = if (isPlaying) {
-                    R.drawable.ic_stop_circle
-                } else {
-                    R.drawable.ic_play_circle
-                }
                 Image(
-                    painter = painterResource(iconRes),
-                    contentDescription = if (isPlaying) stringResource(R.string.stop) else stringResource(R.string.play),
-                    modifier = Modifier.size(48.dp),
+                    painter = painterResource(
+                        if (isPlaying) R.drawable.ic_pause_circle else R.drawable.ic_play_circle
+                    ),
+                    contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
+                    modifier = Modifier.size(44.dp),
                     colorFilter = ColorFilter.tint(glass_accent)
                 )
             }
