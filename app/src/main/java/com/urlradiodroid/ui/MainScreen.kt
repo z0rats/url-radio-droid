@@ -253,6 +253,7 @@ fun MainScreen(
     var startError by remember { mutableStateOf(false) }
     var hasTimeshift by remember { mutableStateOf(false) }
     var isAtLive by remember { mutableStateOf(true) }
+    var isBufferingCurrentStation by remember { mutableStateOf(false) }
     LaunchedEffect(currentPlayingStationId) {
         isStarting = true
         startError = false
@@ -276,6 +277,8 @@ fun MainScreen(
             isPlaying = isCurrentStationPlaying
             hasTimeshift = svc?.hasTimeshift() ?: false
             isAtLive = svc?.isAtLive() ?: true
+            val buffering = svc?.isBuffering() ?: false
+            isBufferingCurrentStation = buffering && currentMediaId == currentPlayingStation?.streamUrl
             if (isCurrentStationPlaying) {
                 isStarting = false
                 startError = false
@@ -288,6 +291,7 @@ fun MainScreen(
         startError -> PlaybackStatus.ERROR
         isPlaying -> PlaybackStatus.PLAYING
         isStarting -> PlaybackStatus.STARTING
+        isBufferingCurrentStation -> PlaybackStatus.STARTING
         else -> PlaybackStatus.PAUSED
     }
 

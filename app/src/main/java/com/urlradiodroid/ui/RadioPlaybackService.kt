@@ -9,6 +9,7 @@ import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.util.Log
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -105,16 +106,25 @@ class RadioPlaybackService : MediaSessionService() {
         player = ExoPlayer.Builder(this).build().apply {
             addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
+                    Log.d(TAG, "onPlayerError: code=${error.errorCode}, message=${error.message}")
                     handlePlayerError(error)
                 }
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    // Update notification when playback state changes
+                    val p = this@RadioPlaybackService.player
+                    Log.d(TAG, "onIsPlayingChanged: isPlaying=$isPlaying, state=${p?.playbackState}, mediaId=${p?.currentMediaItem?.mediaId?.take(50)}")
                     notificationManager?.invalidate()
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    // Ensure notification is shown when player is ready or playing
+                    val stateStr = when (playbackState) {
+                        Player.STATE_IDLE -> "IDLE"
+                        Player.STATE_BUFFERING -> "BUFFERING"
+                        Player.STATE_READY -> "READY"
+                        Player.STATE_ENDED -> "ENDED"
+                        else -> "?($playbackState)"
+                    }
+                    Log.d(TAG, "onPlaybackStateChanged: $stateStr")
                     if (playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING) {
                         notificationManager?.invalidate()
                     }
@@ -192,31 +202,12 @@ class RadioPlaybackService : MediaSessionService() {
 
     private fun startPlayback(streamUrl: String) {
         val exoPlayer = player ?: return
-
-        // Stop previous recorder and delete its file (handles station switch: new URL = new file)
+        Log.d(TAG, "startPlayback: isHls=${isHlsUrl(streamUrl)}, url=${streamUrl.take(60)}")
         stopTimeshiftRecorder()
-        val bufferFile = File(cacheDir, "timeshift_${streamUrl.hashCode().toString(36)}.tmp")
-        bufferFile.createNewFile()
-        timeshiftBufferFile = bufferFile
-        val recorder = StreamRecorder(streamUrl, bufferFile)
-        streamRecorder = recorder
-        atLiveEdge = true
-        lastSeekPositionMs = 0L
-        lastSeekTimeMs = System.currentTimeMillis()
-        recorder.start {
-            mainHandler.post {
-                markConnectionError()
-                stopPlayback()
-            }
-        }
 
-        val dataSourceFactory = LiveFileDataSource.Factory(
-            file = bufferFile,
-            currentLengthSupplier = { recorder.getCurrentLength() }
-        )
         val mediaItem = MediaItem.Builder()
             .setMediaId(streamUrl)
-            .setUri(Uri.fromFile(bufferFile))
+            .setUri(streamUrl)
             .setMediaMetadata(
                 androidx.media3.common.MediaMetadata.Builder()
                     .setTitle(stationName ?: getString(R.string.unknown_station))
@@ -224,14 +215,44 @@ class RadioPlaybackService : MediaSessionService() {
                     .build()
             )
             .build()
-        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory as DataSource.Factory)
-            .createMediaSource(mediaItem)
-        exoPlayer.setMediaSource(mediaSource)
-        exoPlayer.prepare()
-        exoPlayer.play()
+
+        if (isHlsUrl(streamUrl)) {
+            // HLS (m3u8): ExoPlayer fetches manifest and .ts segments; no timeshift.
+            exoPlayer.setMediaItem(mediaItem)
+            exoPlayer.prepare()
+            exoPlayer.play()
+        } else {
+            // Single URL stream: record to buffer file and play with timeshift.
+            val bufferFile = File(cacheDir, "timeshift_${streamUrl.hashCode().toString(36)}.tmp")
+            bufferFile.createNewFile()
+            timeshiftBufferFile = bufferFile
+            val recorder = StreamRecorder(streamUrl, bufferFile)
+            streamRecorder = recorder
+            atLiveEdge = true
+            lastSeekPositionMs = 0L
+            lastSeekTimeMs = System.currentTimeMillis()
+            recorder.start {
+                mainHandler.post {
+                    markConnectionError()
+                    stopPlayback()
+                }
+            }
+            val dataSourceFactory = LiveFileDataSource.Factory(
+                file = bufferFile,
+                currentLengthSupplier = { recorder.getCurrentLength() }
+            )
+            val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory as DataSource.Factory)
+                .createMediaSource(mediaItem.buildUpon().setUri(Uri.fromFile(bufferFile)).build())
+            exoPlayer.setMediaSource(mediaSource)
+            exoPlayer.prepare()
+            exoPlayer.play()
+        }
 
         notificationManager?.invalidate()
     }
+
+    private fun isHlsUrl(url: String): Boolean =
+        url.contains("m3u8", ignoreCase = true)
 
     private fun stopTimeshiftRecorder() {
         streamRecorder?.stop()
@@ -248,6 +269,8 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     fun isPlaying(): Boolean = player?.isPlaying ?: false
+
+    fun isBuffering(): Boolean = player?.playbackState == Player.STATE_BUFFERING
 
     fun getPlayer(): ExoPlayer? = player
 
@@ -315,6 +338,7 @@ class RadioPlaybackService : MediaSessionService() {
             PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW -> {
                 player?.seekToDefaultPosition()
                 player?.prepare()
+                player?.play()
             }
             else -> {
                 markConnectionError()
@@ -357,6 +381,7 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     companion object {
+        private const val TAG = "RadioPlayback"
         const val EXTRA_STATION_NAME = "station_name"
         const val EXTRA_STREAM_URL = "stream_url"
         private const val NOTIFICATION_ID = 1

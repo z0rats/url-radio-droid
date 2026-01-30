@@ -11,8 +11,9 @@ A minimalist Android application for listening to internet radio via direct stre
 - **Unified player and list state**: the bottom mini player and the active list item always show the same station and play/pause state
 - **Mini player**: always visible when a station is selected; play/pause; tap to open full playback screen
 - **Swipe to switch stations**: swipe left/right on the mini player to switch to previous/next station in the list; smooth slide animation
-- **Playback status**: Playing, Paused, Starting…, or Connection failed (after ~10 s if stream does not start, or immediately on invalid URL)
-- **Timeshift (rewind)**: while playing, rewind 5 seconds or jump back to live; live indicator shows when you are at the live edge
+- **Playback status**: Playing, Paused, Starting… (also when buffering), or Connection failed (after ~10 s if stream does not start, or immediately on invalid URL)
+- **HLS support**: `.m3u8` URLs are played via ExoPlayer’s HLS support (manifest + segments); no timeshift for HLS
+- **Timeshift (rewind)**: for single-URL streams, rewind 5 seconds or jump back to live; live indicator shows when you are at the live edge
 - **Connection error handling**: invalid or unreachable stream URL shows "Connection failed" toast; app does not crash
 - Local data storage using Room Database
 - Modern UI with Jetpack Compose (liquid glass style)
@@ -37,11 +38,11 @@ A minimalist Android application for listening to internet radio via direct stre
 
 1. Launch the application
 2. Tap the "Add" button (FAB)
-3. Enter station name and stream URL (e.g. `http://stream.example.com:8000/stream`)
+3. Enter station name and stream URL (e.g. `http://stream.example.com:8000/stream` or `https://example.com/stream.m3u8` for HLS)
 4. Tap "Save"
 5. Tap a station in the list to play (or tap Play on a station card)
 6. Use the bottom mini player: tap for full playback screen; use Play/Pause; swipe left/right to switch to previous/next station
-7. **Timeshift**: while playing, use the rewind (↺ 5) button to go back 5 seconds; use the Live (●) button to return to the live edge; the Live indicator is bright when at live, dim when in the past
+7. **Timeshift** (single-URL streams only): while playing, use the rewind (↺ 5) button to go back 5 seconds; use the Live (●) button to return to the live edge; the Live indicator is bright when at live, dim when in the past
 8. Playback continues in background with media notification
 
 ## Timeshift (rewind)
@@ -51,7 +52,7 @@ While a stream is playing, the app records it to a temporary buffer file (defaul
 - **Rewind 5 s**: jumps back 5 seconds (by reopening the source at the corresponding byte offset; ExoPlayer does not reliably honour `seekTo(ms)` for live-style progressive sources).
 - **Live**: jumps to the current end of the buffer (live edge). The Live indicator (●) is bright when at live, dim when in the past.
 
-Buffer file is created in app cache and removed when playback stops.
+Buffer file is created in app cache and removed when playback stops. **Timeshift is not used for HLS** (`.m3u8`): those streams are played directly; rewind/Live buttons are hidden.
 
 ## Technologies
 
@@ -59,7 +60,7 @@ Buffer file is created in app cache and removed when playback stops.
 - **Jetpack Compose** - UI toolkit
 - **AndroidX** - support libraries
 - **Room Database** - local database for stations
-- **Media3 (ExoPlayer)** - audio stream playback; custom DataSource for timeshift buffer
+- **Media3 (ExoPlayer)** - audio stream playback; HLS (m3u8) and progressive; custom DataSource for timeshift buffer
 - **OkHttp** - stream recording for timeshift (buffer file)
 - **Coroutines & StateFlow** - state and async operations
 - **KSP** - Room annotation processing
@@ -104,6 +105,7 @@ Main project dependencies:
 - `androidx.compose.*` - Compose BOM
 - `androidx.room:room-runtime:2.8.4` + `room-ktx:2.8.4`
 - `androidx.media3:media3-exoplayer:1.9.1`
+- `androidx.media3:media3-exoplayer-hls:1.9.1` (HLS / .m3u8)
 - `androidx.media3:media3-ui:1.9.1`
 - `androidx.media3:media3-session:1.9.1`
 - `androidx.media3:media3-datasource:1.9.1` (custom DataSource for timeshift)
