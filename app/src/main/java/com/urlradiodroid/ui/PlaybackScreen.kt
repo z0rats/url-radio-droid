@@ -18,8 +18,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +33,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,7 +45,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,12 +71,6 @@ class PlaybackActivity : ComponentActivity() {
     private var isBound = false
     private var stationName: String? = null
     private var streamUrl: String? = null
-    private val handler = Handler(Looper.getMainLooper())
-    private val updateRunnable = object : Runnable {
-        override fun run() {
-            handler.postDelayed(this, 500)
-        }
-    }
 
     companion object {
         const val EXTRA_STATION_ID = "station_id"
@@ -93,6 +88,15 @@ class PlaybackActivity : ComponentActivity() {
         override fun onServiceDisconnected(name: ComponentName?) {
             playbackService = null
             isBound = false
+            Handler(Looper.getMainLooper()).post {
+                if (RadioPlaybackService.getAndClearConnectionError()) {
+                    Toast.makeText(
+                        this@PlaybackActivity.applicationContext,
+                        getString(R.string.connection_failed),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
 
@@ -132,9 +136,7 @@ class PlaybackActivity : ComponentActivity() {
                     streamUrl = streamUrl,
                     playbackService = playbackService,
                     onBackClick = { finish() },
-                    onPlayStopClick = {
-                        togglePlayback()
-                    }
+                    onPlayStopClick = { togglePlayback() }
                 )
             }
         }
@@ -195,16 +197,9 @@ class PlaybackActivity : ComponentActivity() {
                 }
             }
         }
-        handler.post(updateRunnable)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        handler.removeCallbacks(updateRunnable)
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(updateRunnable)
         if (isBound) {
             unbindService(serviceConnection)
             isBound = false
@@ -284,7 +279,7 @@ fun PlaybackScreen(
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(
-                                imageVector = Icons.Default.ArrowBack,
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)
                             )
                         }
@@ -346,6 +341,7 @@ fun PlaybackScreen(
                                 }
                             )
                         }
+
                     }
                 }
             }

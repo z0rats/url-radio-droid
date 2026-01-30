@@ -41,4 +41,6 @@
     <string name="starting">Starting…</string>
     <string name="connection_failed">Connection failed</string>
     <string name="close">Close</string>
+    <string name="rewind_5s">−5 s</string>
+    <string name="live">Live</string>
 </resources>

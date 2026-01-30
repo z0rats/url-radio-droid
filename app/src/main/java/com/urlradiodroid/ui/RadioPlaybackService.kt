@@ -4,13 +4,18 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.net.Uri
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
@@ -18,7 +23,10 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
 import com.urlradiodroid.R
+import com.urlradiodroid.ui.playback.LiveFileDataSource
+import com.urlradiodroid.ui.playback.StreamRecorder
 import com.urlradiodroid.util.EmojiGenerator
+import java.io.File
 
 @UnstableApi
 class RadioPlaybackService : MediaSessionService() {
@@ -27,6 +35,15 @@ class RadioPlaybackService : MediaSessionService() {
     private var notificationManager: PlayerNotificationManager? = null
     private var stationName: String? = null
 
+    private var timeshiftBufferFile: File? = null
+    private var streamRecorder: StreamRecorder? = null
+    private var atLiveEdge: Boolean = true
+
+    /** Estimated playback position (ms) for timeshift seek when player reports 0 for live-style source. */
+    private var lastSeekPositionMs: Long = 0L
+    private var lastSeekTimeMs: Long = 0L
+
+    private val mainHandler = Handler(Looper.getMainLooper())
     private val binder = LocalBinder()
 
     inner class LocalBinder : Binder() {
@@ -176,9 +193,30 @@ class RadioPlaybackService : MediaSessionService() {
     private fun startPlayback(streamUrl: String) {
         val exoPlayer = player ?: return
 
+        // Stop previous recorder and delete its file (handles station switch: new URL = new file)
+        stopTimeshiftRecorder()
+        val bufferFile = File(cacheDir, "timeshift_${streamUrl.hashCode().toString(36)}.tmp")
+        bufferFile.createNewFile()
+        timeshiftBufferFile = bufferFile
+        val recorder = StreamRecorder(streamUrl, bufferFile)
+        streamRecorder = recorder
+        atLiveEdge = true
+        lastSeekPositionMs = 0L
+        lastSeekTimeMs = System.currentTimeMillis()
+        recorder.start {
+            mainHandler.post {
+                markConnectionError()
+                stopPlayback()
+            }
+        }
+
+        val dataSourceFactory = LiveFileDataSource.Factory(
+            file = bufferFile,
+            currentLengthSupplier = { recorder.getCurrentLength() }
+        )
         val mediaItem = MediaItem.Builder()
             .setMediaId(streamUrl)
-            .setUri(streamUrl)
+            .setUri(Uri.fromFile(bufferFile))
             .setMediaMetadata(
                 androidx.media3.common.MediaMetadata.Builder()
                     .setTitle(stationName ?: getString(R.string.unknown_station))
@@ -186,32 +224,91 @@ class RadioPlaybackService : MediaSessionService() {
                     .build()
             )
             .build()
-
-        exoPlayer.setMediaItem(mediaItem)
+        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory as DataSource.Factory)
+            .createMediaSource(mediaItem)
+        exoPlayer.setMediaSource(mediaSource)
         exoPlayer.prepare()
         exoPlayer.play()
 
-        // Force notification update to ensure it's displayed
         notificationManager?.invalidate()
     }
 
+    private fun stopTimeshiftRecorder() {
+        streamRecorder?.stop()
+        streamRecorder = null
+        timeshiftBufferFile?.takeIf { it.exists() }?.delete()
+        timeshiftBufferFile = null
+    }
+
     fun stopPlayback() {
+        stopTimeshiftRecorder()
         player?.pause()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
 
-    fun isPlaying(): Boolean {
-        return player?.isPlaying ?: false
+    fun isPlaying(): Boolean = player?.isPlaying ?: false
+
+    fun getPlayer(): ExoPlayer? = player
+
+    fun getCurrentStationName(): String? = stationName
+
+    fun seekBackward(ms: Long) {
+        val p = player ?: return
+        val rec = streamRecorder ?: return
+        val bufferFile = timeshiftBufferFile ?: return
+        val now = System.currentTimeMillis()
+        val currentPosMs = lastSeekPositionMs + (now - lastSeekTimeMs)
+        val targetMs = (currentPosMs - ms).coerceAtLeast(0L)
+
+        // ExoPlayer often ignores seekTo(ms) for live-style progressive source (C.LENGTH_UNSET).
+        // Seek by reopening source at byte offset corresponding to targetMs.
+        val bytesTotal = rec.getCurrentLength()
+        val startMs = rec.getStartTimeMs()
+        val elapsedMs = (now - startMs).coerceAtLeast(1L)
+        val bytesPerMs = if (elapsedMs > 0 && bytesTotal > 0) bytesTotal / elapsedMs else 0L
+        val targetBytes = if (bytesPerMs > 0) (targetMs * bytesPerMs).coerceIn(0L, bytesTotal) else 0L
+
+        val dataSourceFactory = LiveFileDataSource.Factory(
+            file = bufferFile,
+            currentLengthSupplier = { rec.getCurrentLength() },
+            startPositionOverride = { targetBytes }
+        )
+        val mediaItem = p.currentMediaItem ?: return
+        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory as DataSource.Factory)
+            .createMediaSource(mediaItem)
+        p.setMediaSource(mediaSource)
+        p.prepare()
+        p.play()
+
+        lastSeekPositionMs = targetMs
+        lastSeekTimeMs = now
+        atLiveEdge = false
     }
 
-    fun getPlayer(): ExoPlayer? {
-        return player
+    fun seekToLive() {
+        val rec = streamRecorder ?: return
+        val p = player ?: return
+        val bufferFile = timeshiftBufferFile ?: return
+        val dataSourceFactory = LiveFileDataSource.Factory(
+            file = bufferFile,
+            currentLengthSupplier = { rec.getCurrentLength() },
+            startPositionOverride = { rec.getCurrentLength() }
+        )
+        val mediaItem = p.currentMediaItem ?: return
+        val mediaSource = ProgressiveMediaSource.Factory(dataSourceFactory as DataSource.Factory)
+            .createMediaSource(mediaItem)
+        p.setMediaSource(mediaSource)
+        p.prepare()
+        p.play()
+        atLiveEdge = true
+        lastSeekPositionMs = 0L
+        lastSeekTimeMs = System.currentTimeMillis()
     }
 
-    fun getCurrentStationName(): String? {
-        return stationName
-    }
+    fun isAtLive(): Boolean = atLiveEdge
+
+    fun hasTimeshift(): Boolean = streamRecorder?.isRecording() == true
 
     private fun handlePlayerError(error: PlaybackException) {
         when (error.errorCode) {
@@ -220,12 +317,14 @@ class RadioPlaybackService : MediaSessionService() {
                 player?.prepare()
             }
             else -> {
+                markConnectionError()
                 stopPlayback()
             }
         }
     }
 
     private fun releasePlayer() {
+        stopTimeshiftRecorder()
         notificationManager?.setPlayer(null)
         mediaSession?.release()
         player?.let {
@@ -262,5 +361,15 @@ class RadioPlaybackService : MediaSessionService() {
         const val EXTRA_STREAM_URL = "stream_url"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "radio_playback_channel"
+
+        @Volatile
+        private var connectionErrorFlag = false
+
+        fun markConnectionError() {
+            connectionErrorFlag = true
+        }
+
+        fun getAndClearConnectionError(): Boolean =
+            connectionErrorFlag.also { connectionErrorFlag = false }
     }
 }

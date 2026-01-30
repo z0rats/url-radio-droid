@@ -247,10 +247,12 @@ fun MainScreen(
         }
     }
 
-    // Update playing state periodically
+    // Update playing state and timeshift/live state periodically
     var isPlaying by remember { mutableStateOf(false) }
     var isStarting by remember { mutableStateOf(false) }
     var startError by remember { mutableStateOf(false) }
+    var hasTimeshift by remember { mutableStateOf(false) }
+    var isAtLive by remember { mutableStateOf(true) }
     LaunchedEffect(currentPlayingStationId) {
         isStarting = true
         startError = false
@@ -265,12 +267,15 @@ fun MainScreen(
     }
     LaunchedEffect(playbackService, currentPlayingStation) {
         while (true) {
-            val serviceIsPlaying = playbackService?.isPlaying() ?: false
-            val currentMediaId = playbackService?.getPlayer()?.currentMediaItem?.mediaId
+            val svc = playbackService
+            val serviceIsPlaying = svc?.isPlaying() ?: false
+            val currentMediaId = svc?.getPlayer()?.currentMediaItem?.mediaId
             val isCurrentStationPlaying = currentPlayingStation != null &&
-                    currentMediaId == currentPlayingStation?.streamUrl &&
+                    currentMediaId == currentPlayingStation.streamUrl &&
                     serviceIsPlaying
             isPlaying = isCurrentStationPlaying
+            hasTimeshift = svc?.hasTimeshift() ?: false
+            isAtLive = svc?.isAtLive() ?: true
             if (isCurrentStationPlaying) {
                 isStarting = false
                 startError = false
@@ -352,11 +357,18 @@ fun MainScreen(
                             station = station,
                             stations = stations,
                             playbackStatus = playbackStatus,
+                            hasTimeshift = hasTimeshift,
+                            isAtLive = isAtLive,
                             onPlayPauseClick = {
                                 if (isStationPlaying) onStopPlayback() else onPlayStationWithState(station)
                             },
                             onCardClick = { onNowPlayingClick(station) },
                             onSwitchStation = onPlayStationWithState,
+                            onRewind5s = { playbackService?.seekBackward(5000L) },
+                            onReturnToLive = {
+                                isStarting = true
+                                playbackService?.seekToLive()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .windowInsetsPadding(WindowInsets.navigationBars)

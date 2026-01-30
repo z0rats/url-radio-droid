@@ -21,8 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FiberManualRecord
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,9 +63,13 @@ fun NowPlayingBottomBar(
     station: RadioStation?,
     stations: List<RadioStation>,
     playbackStatus: PlaybackStatus,
+    hasTimeshift: Boolean,
+    isAtLive: Boolean,
     onPlayPauseClick: () -> Unit,
     onCardClick: () -> Unit,
     onSwitchStation: (RadioStation) -> Unit,
+    onRewind5s: () -> Unit,
+    onReturnToLive: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (station == null) return
@@ -163,7 +172,11 @@ fun NowPlayingBottomBar(
                         MiniPlayerCardFull(
                             station = station,
                             playbackStatus = playbackStatus,
-                            onPlayPauseClick = onPlayPauseClick
+                            hasTimeshift = hasTimeshift,
+                            isAtLive = isAtLive,
+                            onPlayPauseClick = onPlayPauseClick,
+                            onRewind5s = onRewind5s,
+                            onReturnToLive = onReturnToLive
                         )
                     }
                     Box(modifier = Modifier.width(cardWidth).height(80.dp)) {
@@ -243,7 +256,11 @@ private fun MiniPlayerCardPreview(station: RadioStation) {
 private fun MiniPlayerCardFull(
     station: RadioStation,
     playbackStatus: PlaybackStatus,
-    onPlayPauseClick: () -> Unit
+    hasTimeshift: Boolean,
+    isAtLive: Boolean,
+    onPlayPauseClick: () -> Unit,
+    onRewind5s: () -> Unit,
+    onReturnToLive: () -> Unit
 ) {
     val isPlaying = playbackStatus == PlaybackStatus.PLAYING
     Card(
@@ -260,7 +277,7 @@ private fun MiniPlayerCardFull(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -317,6 +334,41 @@ private fun MiniPlayerCardFull(
                             color = text_hint
                         )
                     }
+                }
+            }
+
+            if (hasTimeshift) {
+                IconButton(
+                    onClick = onRewind5s,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Replay,
+                            contentDescription = stringResource(R.string.rewind_5s),
+                            modifier = Modifier.size(24.dp),
+                            tint = text_primary
+                        )
+                        Text(
+                            text = "5",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = text_primary
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onReturnToLive,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.FiberManualRecord,
+                        contentDescription = stringResource(R.string.live),
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isAtLive) MaterialTheme.colorScheme.primary else text_hint
+                    )
                 }
             }
 

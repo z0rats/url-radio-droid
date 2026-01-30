@@ -20,7 +20,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "radio_database"
                 )
-                    .fallbackToDestructiveMigration() // For development - will recreate DB on schema change
+                    .fallbackToDestructiveMigration(dropAllTables = true) // For development - will recreate DB on schema change
                     .build()
                 INSTANCE = instance
                 instance

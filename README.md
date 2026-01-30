@@ -11,7 +11,9 @@ A minimalist Android application for listening to internet radio via direct stre
 - **Unified player and list state**: the bottom mini player and the active list item always show the same station and play/pause state
 - **Mini player**: always visible when a station is selected; play/pause; tap to open full playback screen
 - **Swipe to switch stations**: swipe left/right on the mini player to switch to previous/next station in the list; smooth slide animation
-- **Playback status**: Playing, Paused, Starting…, or Connection failed (after ~10 s if stream does not start)
+- **Playback status**: Playing, Paused, Starting…, or Connection failed (after ~10 s if stream does not start, or immediately on invalid URL)
+- **Timeshift (rewind)**: while playing, rewind 5 seconds or jump back to live; live indicator shows when you are at the live edge
+- **Connection error handling**: invalid or unreachable stream URL shows "Connection failed" toast; app does not crash
 - Local data storage using Room Database
 - Modern UI with Jetpack Compose (liquid glass style)
 - Network availability check before playback
@@ -39,7 +41,17 @@ A minimalist Android application for listening to internet radio via direct stre
 4. Tap "Save"
 5. Tap a station in the list to play (or tap Play on a station card)
 6. Use the bottom mini player: tap for full playback screen; use Play/Pause; swipe left/right to switch to previous/next station
-7. Playback continues in background with media notification
+7. **Timeshift**: while playing, use the rewind (↺ 5) button to go back 5 seconds; use the Live (●) button to return to the live edge; the Live indicator is bright when at live, dim when in the past
+8. Playback continues in background with media notification
+
+## Timeshift (rewind)
+
+While a stream is playing, the app records it to a temporary buffer file (default cap ~30 MB). Playback reads from this file, so you can rewind within the buffered range:
+
+- **Rewind 5 s**: jumps back 5 seconds (by reopening the source at the corresponding byte offset; ExoPlayer does not reliably honour `seekTo(ms)` for live-style progressive sources).
+- **Live**: jumps to the current end of the buffer (live edge). The Live indicator (●) is bright when at live, dim when in the past.
+
+Buffer file is created in app cache and removed when playback stops.
 
 ## Technologies
 
@@ -47,7 +59,8 @@ A minimalist Android application for listening to internet radio via direct stre
 - **Jetpack Compose** - UI toolkit
 - **AndroidX** - support libraries
 - **Room Database** - local database for stations
-- **Media3 (ExoPlayer)** - audio stream playback
+- **Media3 (ExoPlayer)** - audio stream playback; custom DataSource for timeshift buffer
+- **OkHttp** - stream recording for timeshift (buffer file)
 - **Coroutines & StateFlow** - state and async operations
 - **KSP** - Room annotation processing
 - **MediaSession** - integration with Android media playback system
@@ -66,9 +79,12 @@ app/src/main/
 │   │   ├── MainViewModel.kt         # State: stations, search, current playing station
 │   │   ├── AddStationScreen.kt      # Add/edit station screen
 │   │   ├── PlaybackScreen.kt        # Full playback screen
-│   │   ├── RadioPlaybackService.kt  # Background playback service
+│   │   ├── RadioPlaybackService.kt  # Background playback service (timeshift, seek)
+│   │   ├── playback/
+│   │   │   ├── StreamRecorder.kt    # Records stream to buffer file (OkHttp)
+│   │   │   └── LiveFileDataSource.kt # Media3 DataSource: read buffer, block at EOF
 │   │   ├── components/
-│   │   │   ├── NowPlayingBottomBar.kt  # Mini player with swipe-to-switch
+│   │   │   ├── NowPlayingBottomBar.kt  # Mini player: play/pause, rewind 5s, live
 │   │   │   └── StationItem.kt          # Station list item (swipe to edit/delete)
 │   │   └── theme/                   # Compose theme (colors, typography)
 │   └── util/
@@ -87,9 +103,11 @@ Main project dependencies:
 - `com.google.android.material:material:1.13.0`
 - `androidx.compose.*` - Compose BOM
 - `androidx.room:room-runtime:2.8.4` + `room-ktx:2.8.4`
-- `androidx.media3:media3-exoplayer:1.9.0`
-- `androidx.media3:media3-ui:1.9.0`
-- `androidx.media3:media3-session:1.9.0`
+- `androidx.media3:media3-exoplayer:1.9.1`
+- `androidx.media3:media3-ui:1.9.1`
+- `androidx.media3:media3-session:1.9.1`
+- `androidx.media3:media3-datasource:1.9.1` (custom DataSource for timeshift)
+- `com.squareup.okhttp3:okhttp` (stream recording for timeshift buffer)
 
 ## Testing
 
