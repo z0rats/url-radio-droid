@@ -1,40 +1,48 @@
-# URL Radio Droid
+# 📻 URL Radio Droid
 
 A minimalist Android application for listening to internet radio via direct streaming links (HTTP/HTTPS).
 
-## Features
+## 📸 Screenshots
 
-- Add radio stations with name and stream URL
-- View list of saved stations with search (when more than 4 stations)
-- Play streams using ExoPlayer
-- Background playback support with media notifications
-- **Unified player and list state**: the bottom mini player and the active list item always show the same station and play/pause state
-- **Mini player**: always visible when a station is selected; play/pause; tap to open full playback screen
-- **Swipe to switch stations**: swipe left/right on the mini player to switch to previous/next station in the list; smooth slide animation
-- **Playback status**: Playing, Paused, Starting… (also when buffering), or Connection failed (after ~10 s if stream does not start, or immediately on invalid URL)
-- **HLS support**: `.m3u8` URLs are played via ExoPlayer’s HLS support (manifest + segments); no timeshift for HLS
-- **Timeshift (rewind)**: for single-URL streams, rewind 5 seconds or jump back to live; live indicator shows when you are at the live edge
-- **Connection error handling**: invalid or unreachable stream URL shows "Connection failed" toast; app does not crash
-- Local data storage using Room Database
-- Modern UI with Jetpack Compose (liquid glass style)
-- Network availability check before playback
-- URL validation when adding stations
+<p align="center">
+  <img src="docs/screenshots/1.jpg" alt="App main screen" width="280" />
+  <img src="docs/screenshots/2.jpg" alt="App add station screen" width="280" />
+  <img src="docs/screenshots/3.jpg" alt="App playback screen" width="280" />
+</p>
 
-## Requirements
+## ✨ Features
+
+- 📍 Add radio stations with name and stream URL
+- 📜 View list of saved stations with search (when more than 4 stations)
+- ▶️ Play streams using ExoPlayer
+- 🔇 Background playback support with media notifications
+- **🎯 Unified player and list state**: the bottom mini player and the active list item always show the same station and play/pause state
+- **🎵 Mini player**: always visible when a station is selected; play/pause; tap to open full playback screen
+- **👆 Swipe to switch stations**: swipe left/right on the mini player to switch to previous/next station in the list; smooth slide animation
+- **📊 Playback status**: Playing, Paused, Starting… (also when buffering), or Connection failed (after ~10 s if stream does not start, or immediately on invalid URL)
+- **📡 HLS support**: `.m3u8` URLs are played via ExoPlayer’s HLS support (manifest + segments); no timeshift for HLS
+- **⏪ Timeshift (rewind)**: for single-URL streams, rewind 5 seconds or jump back to live; live indicator shows when you are at the live edge
+- **⚠️ Connection error handling**: invalid or unreachable stream URL shows "Connection failed" toast; app does not crash
+- 💾 Local data storage using Room Database
+- 🎨 Modern UI with Jetpack Compose (liquid glass style)
+- 🌐 Network availability check before playback
+- ✔️ URL validation when adding stations
+
+## 📋 Requirements
 
 - Android 10 (API 29) or higher
 - Android Studio or compatible IDE
 - Gradle 9.0+
 - Java 24 (for compilation)
 
-## Building
+## 🔨 Building
 
 1. Clone the repository or open the project in Android Studio
 2. Sync Gradle dependencies
 3. Build the project: `./gradlew build`
 4. Install on device: `./gradlew installDebug`
 
-## Releases
+## 📦 Releases
 
 Installable APKs are published in the repo’s [Releases](releases) section when you push a version tag.
 
@@ -48,7 +56,7 @@ To publish a new release:
 
 Release APKs are currently built as debug (no separate keystore). For a signed release build, add a keystore via GitHub Secrets and adjust the workflow.
 
-## Usage
+## 🚀 Usage
 
 1. Launch the application
 2. Tap the "Add" button (FAB)
@@ -59,7 +67,7 @@ Release APKs are currently built as debug (no separate keystore). For a signed r
 7. **Timeshift** (single-URL streams only): while playing, use the rewind (↺ 5) button to go back 5 seconds; use the Live (●) button to return to the live edge; the Live indicator is bright when at live, dim when in the past
 8. Playback continues in background with media notification
 
-## Timeshift (rewind)
+## ⏪ Timeshift (rewind)
 
 While a stream is playing, the app records it to a temporary buffer file (default cap ~30 MB). Playback reads from this file, so you can rewind within the buffered range:
 
@@ -68,7 +76,7 @@ While a stream is playing, the app records it to a temporary buffer file (defaul
 
 Buffer file is created in app cache and removed when playback stops. **Timeshift is not used for HLS** (`.m3u8`): those streams are played directly; rewind/Live buttons are hidden.
 
-## Technologies
+## 🛠 Technologies
 
 - **Kotlin** - primary development language
 - **Jetpack Compose** - UI toolkit
@@ -80,7 +88,7 @@ Buffer file is created in app cache and removed when playback stops. **Timeshift
 - **KSP** - Room annotation processing
 - **MediaSession** - integration with Android media playback system
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 app/src/main/
@@ -109,7 +117,7 @@ app/src/main/
     └── drawable/                    # Icons
 ```
 
-## Dependencies
+## 📚 Dependencies
 
 Main project dependencies:
 
@@ -125,7 +133,7 @@ Main project dependencies:
 - `androidx.media3:media3-datasource:1.9.1` (custom DataSource for timeshift)
 - `com.squareup.okhttp3:okhttp` (stream recording for timeshift buffer)
 
-## Testing
+## 🧪 Testing
 
 The project includes unit tests for:
 
@@ -156,7 +164,7 @@ View test results:
 
 Test results are available in `app/build/test-results/` directory.
 
-## Code Quality
+## ✅ Code Quality
 
 ### Kotlin Linting (ktlint)
 
@@ -174,7 +182,7 @@ Auto-fix code style issues:
 ./gradlew ktlintFormat
 ```
 
-## CI/CD
+## 🔄 CI/CD
 
 GitHub Actions workflow automatically runs on every push and pull request:
 
@@ -184,7 +192,7 @@ GitHub Actions workflow automatically runs on every push and pull request:
 
 View workflow status in the "Actions" tab of your GitHub repository.
 
-## Permissions
+## 🔐 Permissions
 
 The application requests the following permissions:
 
@@ -193,6 +201,6 @@ The application requests the following permissions:
 - `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` - for background playback
 - `POST_NOTIFICATIONS` - for media notifications (Android 13+)
 
-## License
+## 📄 License
 
 Project created for personal use.
