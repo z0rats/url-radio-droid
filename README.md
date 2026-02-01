@@ -34,6 +34,20 @@ A minimalist Android application for listening to internet radio via direct stre
 3. Build the project: `./gradlew build`
 4. Install on device: `./gradlew installDebug`
 
+## Releases
+
+Installable APKs are published in the repo’s [Releases](releases) section when you push a version tag.
+
+To publish a new release:
+
+1. Create a version tag (e.g. `v1.0`):  
+   `git tag v1.0`
+2. Push the tag:  
+   `git push origin v1.0`
+3. On GitHub, open **Actions** — the **Release** workflow will run, build the APK, and create a release with the attached file `url-radiodroid-1.0.apk`.
+
+Release APKs are currently built as debug (no separate keystore). For a signed release build, add a keystore via GitHub Secrets and adjust the workflow.
+
 ## Usage
 
 1. Launch the application
