@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStation
+import com.urlradiodroid.ui.theme.card_surface
+import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.text_hint
 import com.urlradiodroid.ui.theme.text_primary
@@ -202,9 +204,7 @@ private fun MiniPlayerCardPreview(station: RadioStation) {
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f)
-        ),
+        colors = CardDefaults.cardColors(containerColor = card_surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
@@ -219,7 +219,7 @@ private fun MiniPlayerCardPreview(station: RadioStation) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                    .background(card_surface_active),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -267,9 +267,7 @@ private fun MiniPlayerCardFull(
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
-        ),
+        colors = CardDefaults.cardColors(containerColor = card_surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {
@@ -284,7 +282,7 @@ private fun MiniPlayerCardFull(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
+                    .background(card_surface_active),
                 contentAlignment = Alignment.Center
             ) {
                 Text(

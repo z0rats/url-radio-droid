@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,7 +42,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,6 +66,7 @@ import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
 import com.urlradiodroid.ui.theme.background_gradient_mid
 import com.urlradiodroid.ui.theme.background_gradient_start
+import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.text_secondary
 
 class MainActivity : ComponentActivity() {
@@ -130,6 +131,10 @@ class MainActivity : ComponentActivity() {
                     },
                     onStationDelete = { station ->
                         showDeleteConfirmation(station) { stationToDelete ->
+                            if (viewModel.getCurrentPlayingStationId() == stationToDelete.id) {
+                                _playbackService.value?.stopPlayback()
+                                viewModel.updateCurrentPlayingStation(null)
+                            }
                             viewModel.deleteStation(stationToDelete.id)
                         }
                     },
@@ -334,14 +339,6 @@ fun MainScreen(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
-                    colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)
-                    )
-                )
-            },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = onAddStationClick,
@@ -385,6 +382,7 @@ fun MainScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.statusBars)
                     .padding(paddingValues)
             ) {
                 AnimatedVisibility(visible = viewModel.stations.value.size > 4) {
@@ -396,8 +394,8 @@ fun MainScreen(
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         placeholder = { Text(stringResource(R.string.search_stations)) },
                         colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                            focusedContainerColor = card_surface,
+                            unfocusedContainerColor = card_surface,
                             focusedTextColor = text_secondary,
                             unfocusedTextColor = text_secondary
                         ),
@@ -417,6 +415,11 @@ fun MainScreen(
                             Text(
                                 text = "📻",
                                 style = MaterialTheme.typography.displayMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = text_secondary
                             )
                             Text(
                                 text = stringResource(R.string.no_stations),

@@ -60,6 +60,10 @@ val glass_secondary = Color(0x60FFFFFF)
 val glass_accent = Color(0xFF9BB5FF)
 val glass_dark = Color(0x90FFFFFF)
 
+// Dark card surface (always dark on gradient background, regardless of system theme)
+val card_surface = Color(0xE61C1B1F)
+val card_surface_active = Color(0xCC2A2840)
+
 // Text Colors
 val text_primary = Color(0xFFFFFFFF)
 val text_secondary = Color(0xE6FFFFFF)

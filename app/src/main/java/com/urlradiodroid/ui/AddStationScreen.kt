@@ -51,8 +51,10 @@ import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
 import com.urlradiodroid.ui.theme.background_gradient_mid
 import com.urlradiodroid.ui.theme.background_gradient_start
-import com.urlradiodroid.ui.theme.glass_primary
+import com.urlradiodroid.ui.theme.card_surface
+import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.text_primary
+import com.urlradiodroid.ui.theme.text_hint
 import kotlinx.coroutines.launch
 import java.net.URL
 
@@ -156,7 +158,9 @@ fun AddStationScreen(
                         }
                     },
                     colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f)
+                        containerColor = card_surface,
+                        titleContentColor = text_primary,
+                        navigationIconContentColor = text_primary
                     )
                 )
             }
@@ -173,9 +177,7 @@ fun AddStationScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .widthIn(max = 520.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = glass_primary
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = card_surface),
                     shape = RoundedCornerShape(24.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                 ) {
@@ -192,12 +194,18 @@ fun AddStationScreen(
                             label = { Text(stringResource(R.string.station_name)) },
                             modifier = Modifier.fillMaxWidth(),
                             isError = nameError != null,
-                            supportingText = nameError?.let { { Text(it) } },
+                            supportingText = nameError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                                focusedContainerColor = card_surface_active,
+                                unfocusedContainerColor = card_surface_active,
                                 focusedTextColor = text_primary,
-                                unfocusedTextColor = text_primary
+                                unfocusedTextColor = text_primary,
+                                focusedLabelColor = text_hint,
+                                unfocusedLabelColor = text_hint,
+                                cursorColor = text_primary,
+                                focusedIndicatorColor = text_hint,
+                                unfocusedIndicatorColor = text_hint.copy(alpha = 0.5f),
+                                errorIndicatorColor = MaterialTheme.colorScheme.error
                             ),
                             shape = RoundedCornerShape(16.dp)
                         )
@@ -211,12 +219,18 @@ fun AddStationScreen(
                             label = { Text(stringResource(R.string.stream_url)) },
                             modifier = Modifier.fillMaxWidth(),
                             isError = urlError != null,
-                            supportingText = urlError?.let { { Text(it) } },
+                            supportingText = urlError?.let { { Text(it, color = MaterialTheme.colorScheme.error) } },
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+                                focusedContainerColor = card_surface_active,
+                                unfocusedContainerColor = card_surface_active,
                                 focusedTextColor = text_primary,
-                                unfocusedTextColor = text_primary
+                                unfocusedTextColor = text_primary,
+                                focusedLabelColor = text_hint,
+                                unfocusedLabelColor = text_hint,
+                                cursorColor = text_primary,
+                                focusedIndicatorColor = text_hint,
+                                unfocusedIndicatorColor = text_hint.copy(alpha = 0.5f),
+                                errorIndicatorColor = MaterialTheme.colorScheme.error
                             ),
                             shape = RoundedCornerShape(16.dp)
                         )

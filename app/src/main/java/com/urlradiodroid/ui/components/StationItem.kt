@@ -48,8 +48,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStation
+import com.urlradiodroid.ui.theme.card_surface
+import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
-import com.urlradiodroid.ui.theme.glass_primary
+import com.urlradiodroid.ui.theme.text_hint
+import com.urlradiodroid.ui.theme.text_primary
 import com.urlradiodroid.util.EmojiGenerator
 
 @Composable
@@ -169,7 +172,7 @@ private fun SwipeActionsBackground(
             .fillMaxWidth()
             .height(80.dp)
             .background(
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                color = card_surface,
                 shape = RoundedCornerShape(24.dp)
             )
     ) {
@@ -224,9 +227,9 @@ private fun StationCard(
     modifier: Modifier = Modifier
 ) {
     val containerColor = if (isActive) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+        card_surface_active
     } else {
-        MaterialTheme.colorScheme.surface
+        card_surface
     }
 
     Card(
@@ -265,7 +268,7 @@ private fun StationCard(
                 Text(
                     text = station.name,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = text_primary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -277,7 +280,7 @@ private fun StationCard(
                         else -> station.streamUrl
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = text_hint,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

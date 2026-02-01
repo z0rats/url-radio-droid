@@ -3,7 +3,10 @@ package com.urlradiodroid.ui
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Binder
 import android.os.Handler
@@ -11,11 +14,14 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -43,6 +49,10 @@ class RadioPlaybackService : MediaSessionService() {
     /** Estimated playback position (ms) for timeshift seek when player reports 0 for live-style source. */
     private var lastSeekPositionMs: Long = 0L
     private var lastSeekTimeMs: Long = 0L
+
+    /** True when playback failed due to network; we retry when network is back (e.g. VPN reconnect). */
+    private var pendingRetry = false
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
     private val binder = LocalBinder()
@@ -203,9 +213,12 @@ class RadioPlaybackService : MediaSessionService() {
     private fun startPlayback(streamUrl: String) {
         val exoPlayer = player ?: return
         Log.d(TAG, "startPlayback: isHls=${isHlsUrl(streamUrl)}, url=${streamUrl.take(60)}")
+        pendingRetry = false
         stopTimeshiftRecorder()
+        registerNetworkCallback()
 
-        val mediaItem = MediaItem.Builder()
+        val isHls = isHlsUrl(streamUrl)
+        val mediaItemBuilder = MediaItem.Builder()
             .setMediaId(streamUrl)
             .setUri(streamUrl)
             .setMediaMetadata(
@@ -214,11 +227,20 @@ class RadioPlaybackService : MediaSessionService() {
                     .setArtist(getString(R.string.app_name))
                     .build()
             )
-            .build()
+        // Explicit HLS type when URL doesn't end with .m3u8 (per ExoPlayer HLS guide)
+        if (isHls && !streamUrl.lowercase().endsWith(".m3u8")) {
+            mediaItemBuilder.setMimeType(MimeTypes.APPLICATION_M3U8)
+        }
+        val mediaItem = mediaItemBuilder.build()
 
-        if (isHlsUrl(streamUrl)) {
-            // HLS (m3u8): ExoPlayer fetches manifest and .ts segments; no timeshift.
-            exoPlayer.setMediaItem(mediaItem)
+        if (isHls) {
+            // HLS: use HlsMediaSource + DefaultHttpDataSource per Android HLS guide (live segments, timeouts).
+            val dataSourceFactory = DefaultHttpDataSource.Factory()
+                .setConnectTimeoutMs(8_000)
+                .setReadTimeoutMs(8_000)
+            val hlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
+                .createMediaSource(mediaItem)
+            exoPlayer.setMediaSource(hlsMediaSource)
             exoPlayer.prepare()
             exoPlayer.play()
         } else {
@@ -251,6 +273,41 @@ class RadioPlaybackService : MediaSessionService() {
         notificationManager?.invalidate()
     }
 
+    private fun registerNetworkCallback() {
+        if (networkCallback != null) return
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                mainHandler.post { tryResumePlaybackAfterNetworkRestored() }
+            }
+        }
+        cm.registerDefaultNetworkCallback(networkCallback!!)
+    }
+
+    private fun unregisterNetworkCallback() {
+        networkCallback?.let { callback ->
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            try {
+                cm.unregisterNetworkCallback(callback)
+            } catch (_: Exception) { /* already unregistered */ }
+            networkCallback = null
+        }
+    }
+
+    private fun tryResumePlaybackAfterNetworkRestored() {
+        val p = player ?: return
+        if (p.currentMediaItem == null) return
+        // Retry when we had set pendingRetry (network error) or player is in IDLE (e.g. connection lost without our error code).
+        val shouldRetry = pendingRetry ||
+            p.playbackState == Player.STATE_IDLE
+        if (!shouldRetry) return
+        pendingRetry = false
+        Log.d(TAG, "tryResumePlaybackAfterNetworkRestored: state=${p.playbackState}, preparing and playing")
+        p.prepare()
+        p.play()
+        notificationManager?.invalidate()
+    }
+
     private fun isHlsUrl(url: String): Boolean =
         url.contains("m3u8", ignoreCase = true)
 
@@ -262,6 +319,8 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     fun stopPlayback() {
+        pendingRetry = false
+        unregisterNetworkCallback()
         stopTimeshiftRecorder()
         player?.pause()
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -341,13 +400,28 @@ class RadioPlaybackService : MediaSessionService() {
                 player?.play()
             }
             else -> {
-                markConnectionError()
-                stopPlayback()
+                // Transient network errors (e.g. VPN toggle): retry when network is back instead of stopping.
+                if (isRetryableNetworkError(error)) {
+                    Log.d(TAG, "handlePlayerError: retryable network error, will retry when network available")
+                    pendingRetry = true
+                    notificationManager?.invalidate()
+                } else {
+                    markConnectionError()
+                    stopPlayback()
+                }
             }
         }
     }
 
+    private fun isRetryableNetworkError(error: PlaybackException): Boolean {
+        // All IO/network error codes in media3 (2000–2010): timeout, connection failed, reset, unspecified, etc.
+        val code = error.errorCode
+        return code in 2000..2010
+    }
+
     private fun releasePlayer() {
+        pendingRetry = false
+        unregisterNetworkCallback()
         stopTimeshiftRecorder()
         notificationManager?.setPlayer(null)
         mediaSession?.release()
