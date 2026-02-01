@@ -5,9 +5,9 @@ A minimalist Android application for listening to internet radio via direct stre
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/1.jpg" alt="App main screen" width="280" />
-  <img src="docs/screenshots/2.jpg" alt="App add station screen" width="280" />
-  <img src="docs/screenshots/3.jpg" alt="App playback screen" width="280" />
+  <img src="docs/screenshots/1.jpg" alt="App main screen" width="220" />
+  <img src="docs/screenshots/2.jpg" alt="App add station screen" width="220" />
+  <img src="docs/screenshots/3.jpg" alt="App playback screen" width="220" />
 </p>
 
 ## ✨ Features
