@@ -49,4 +49,39 @@ class UrlValidatorTest {
     fun `test isValidUrl rejects URL with spaces`() {
         assertFalse(AddStationActivity.isValidUrl("http://example.com/stream with spaces"))
     }
+
+    @Test
+    fun `test isValidUrl rejects URL with tab`() {
+        assertFalse(AddStationActivity.isValidUrl("http://example.com/stream\tpath"))
+    }
+
+    @Test
+    fun `test isValidUrl rejects URL with newline`() {
+        assertFalse(AddStationActivity.isValidUrl("http://example.com/stream\npath"))
+    }
+
+    @Test
+    fun `test isValidUrl accepts URL with query params`() {
+        assertTrue(AddStationActivity.isValidUrl("https://example.com/stream?token=abc&quality=high"))
+    }
+
+    @Test
+    fun `test isValidUrl accepts URL with fragment`() {
+        assertTrue(AddStationActivity.isValidUrl("https://example.com/stream#section"))
+    }
+
+    @Test
+    fun `test isValidUrl rejects only whitespace`() {
+        assertFalse(AddStationActivity.isValidUrl("   "))
+    }
+
+    @Test
+    fun `test isValidUrl rejects URL starting with http but invalid host`() {
+        assertFalse(AddStationActivity.isValidUrl("http://"))
+    }
+
+    @Test
+    fun `test isValidUrl rejects file protocol`() {
+        assertFalse(AddStationActivity.isValidUrl("file:///local/path"))
+    }
 }

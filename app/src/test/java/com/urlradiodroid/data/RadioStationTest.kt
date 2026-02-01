@@ -2,6 +2,7 @@ package com.urlradiodroid.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class RadioStationTest {
@@ -50,5 +51,21 @@ class RadioStationTest {
         assertEquals(42L, station.id)
         assertEquals("My Radio", station.name)
         assertEquals("http://radio.example.com:8000/live", station.streamUrl)
+    }
+
+    @Test
+    fun `test RadioStation with null customIcon`() {
+        val station = RadioStation(name = "No Icon", streamUrl = "http://example.com/noicon")
+        assertNull(station.customIcon)
+    }
+
+    @Test
+    fun `test RadioStation with customIcon`() {
+        val station = RadioStation(
+            name = "With Icon",
+            streamUrl = "http://example.com/icon",
+            customIcon = "🎵"
+        )
+        assertEquals("🎵", station.customIcon)
     }
 }

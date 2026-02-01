@@ -1,14 +1,19 @@
 package com.urlradiodroid.data
 
 import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.RuntimeEnvironment
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [29])
 class RadioStationDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var dao: RadioStationDao
@@ -16,7 +21,7 @@ class RadioStationDaoTest {
     @Before
     fun setup() {
         database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
+            RuntimeEnvironment.getApplication(),
             AppDatabase::class.java
         ).allowMainThreadQueries().build()
         dao = database.radioStationDao()
@@ -56,7 +61,7 @@ class RadioStationDaoTest {
     }
 
     @Test
-    fun `test getAllStations orders by name ascending`() = runTest {
+    fun `test getAllStations orders by id ascending oldest first`() = runTest {
         val station1 = RadioStation(name = "Z Station", streamUrl = "http://example.com/z")
         val station2 = RadioStation(name = "A Station", streamUrl = "http://example.com/a")
         val station3 = RadioStation(name = "M Station", streamUrl = "http://example.com/m")
@@ -68,9 +73,89 @@ class RadioStationDaoTest {
         val stations = dao.getAllStations()
 
         assertEquals(3, stations.size)
-        assertEquals("A Station", stations[0].name)
-        assertEquals("M Station", stations[1].name)
-        assertEquals("Z Station", stations[2].name)
+        assertEquals("Z Station", stations[0].name)
+        assertEquals("A Station", stations[1].name)
+        assertEquals("M Station", stations[2].name)
+    }
+
+    @Test
+    fun `test findStationByName returns station when exists`() = runTest {
+        dao.insertStation(RadioStation(name = "Unique Name", streamUrl = "http://example.com/u"))
+        val found = dao.findStationByName("Unique Name")
+        assertEquals("Unique Name", found?.name)
+        assertEquals("http://example.com/u", found?.streamUrl)
+    }
+
+    @Test
+    fun `test findStationByName returns null when not found`() = runTest {
+        val found = dao.findStationByName("No Such Station")
+        assertNull(found)
+    }
+
+    @Test
+    fun `test findStationByName excludes station by excludeId`() = runTest {
+        val id = dao.insertStation(RadioStation(name = "Same", streamUrl = "http://example.com/1"))
+        val found = dao.findStationByName("Same", excludeId = id)
+        assertNull(found)
+        val foundWithoutExclude = dao.findStationByName("Same", excludeId = 0L)
+        assertEquals(id, foundWithoutExclude?.id)
+    }
+
+    @Test
+    fun `test findStationByUrl returns station when exists`() = runTest {
+        dao.insertStation(RadioStation(name = "Any", streamUrl = "http://example.com/unique-url"))
+        val found = dao.findStationByUrl("http://example.com/unique-url")
+        assertEquals("http://example.com/unique-url", found?.streamUrl)
+    }
+
+    @Test
+    fun `test findStationByUrl returns null when not found`() = runTest {
+        val found = dao.findStationByUrl("http://example.com/nonexistent")
+        assertNull(found)
+    }
+
+    @Test
+    fun `test findStationByUrl excludes station by excludeId`() = runTest {
+        val id = dao.insertStation(RadioStation(name = "A", streamUrl = "http://example.com/same"))
+        val found = dao.findStationByUrl("http://example.com/same", excludeId = id)
+        assertNull(found)
+        val foundWithoutExclude = dao.findStationByUrl("http://example.com/same", excludeId = 0L)
+        assertEquals(id, foundWithoutExclude?.id)
+    }
+
+    @Test
+    fun `test updateStation updates and getAllStations returns updated data`() = runTest {
+        val id = dao.insertStation(RadioStation(name = "Old", streamUrl = "http://example.com/old"))
+        val updated = RadioStation(id = id, name = "New", streamUrl = "http://example.com/new")
+        dao.updateStation(updated)
+        val retrieved = dao.getStationById(id)
+        assertEquals("New", retrieved?.name)
+        assertEquals("http://example.com/new", retrieved?.streamUrl)
+    }
+
+    @Test
+    fun `test deleteStation removes station`() = runTest {
+        val id = dao.insertStation(RadioStation(name = "To Remove", streamUrl = "http://example.com/rm"))
+        assertEquals(1, dao.getAllStations().size)
+        dao.deleteStation(id)
+        assertEquals(0, dao.getAllStations().size)
+        assertNull(dao.getStationById(id))
+    }
+
+    @Test
+    fun `test deleteStation for non-existent id does not crash`() = runTest {
+        dao.insertStation(RadioStation(name = "Only", streamUrl = "http://example.com/only"))
+        dao.deleteStation(999L)
+        assertEquals(1, dao.getAllStations().size)
+    }
+
+    @Test
+    fun `test insertStation with customIcon persists`() = runTest {
+        val id = dao.insertStation(
+            RadioStation(name = "With Icon", streamUrl = "http://example.com/icon", customIcon = "🎵")
+        )
+        val retrieved = dao.getStationById(id)
+        assertEquals("🎵", retrieved?.customIcon)
     }
 
     @Test

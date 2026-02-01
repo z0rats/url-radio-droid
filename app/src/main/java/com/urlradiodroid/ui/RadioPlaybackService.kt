@@ -5,7 +5,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
+import android.os.Build
 import android.net.Network
 import android.net.Uri
 import android.os.Binder
@@ -23,6 +25,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.core.app.NotificationCompat
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
@@ -97,7 +100,6 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     private fun createNotificationChannel() {
-        // Create notification channel with default importance to ensure visibility
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.app_name),
@@ -107,9 +109,45 @@ class RadioPlaybackService : MediaSessionService() {
             setShowBadge(false)
             enableVibration(false)
             enableLights(false)
+            setSound(null, null)
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         }
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    private fun createConnectingNotification(): android.app.Notification {
+        val openIntent = Intent(this, PlaybackActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(PlaybackActivity.EXTRA_STATION_NAME, stationName)
+        }
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(stationName ?: getString(R.string.unknown_station))
+            .setContentText(getString(R.string.starting))
+            .setSmallIcon(R.drawable.ic_play_circle)
+            .setContentIntent(contentIntent)
+            .setOngoing(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+    }
+
+    private fun startForegroundWithNotification(notification: android.app.Notification) {
+        startForegroundWithNotification(NOTIFICATION_ID, notification)
+    }
+
+    private fun startForegroundWithNotification(notificationId: Int, notification: android.app.Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(notificationId, notification)
+        }
     }
 
     private fun initializePlayer() {
@@ -142,8 +180,25 @@ class RadioPlaybackService : MediaSessionService() {
             })
         }
 
-        mediaSession = MediaSession.Builder(this, player!!)
+        // MediaSession is created in startPlayback() when we have station info for lock screen session activity
+    }
+
+    private fun buildMediaSession(streamUrl: String) {
+        val p = player ?: return
+        mediaSession?.release()
+        val sessionActivity = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, PlaybackActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra(PlaybackActivity.EXTRA_STATION_NAME, stationName)
+                putExtra(PlaybackActivity.EXTRA_STREAM_URL, streamUrl)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        mediaSession = MediaSession.Builder(this, p)
             .setCallback(MediaSessionCallback())
+            .setSessionActivity(sessionActivity)
             .build()
     }
 
@@ -200,9 +255,8 @@ class RadioPlaybackService : MediaSessionService() {
                 notification: android.app.Notification,
                 ongoing: Boolean
             ) {
-                // Start foreground service with notification to keep playback running
                 if (ongoing) {
-                    startForeground(notificationId, notification)
+                    startForegroundWithNotification(notificationId, notification)
                 }
             }
         }).build().apply {
@@ -216,6 +270,11 @@ class RadioPlaybackService : MediaSessionService() {
         pendingRetry = false
         stopTimeshiftRecorder()
         registerNetworkCallback()
+
+        // Start foreground immediately so notification and lock screen controls appear right away
+        startForegroundWithNotification(createConnectingNotification())
+
+        buildMediaSession(streamUrl)
 
         val isHls = isHlsUrl(streamUrl)
         val mediaItemBuilder = MediaItem.Builder()

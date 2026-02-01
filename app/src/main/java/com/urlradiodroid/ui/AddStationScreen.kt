@@ -89,8 +89,11 @@ class AddStationActivity : ComponentActivity() {
 
         @JvmStatic
         internal fun isValidUrl(urlString: String): Boolean {
+            if (urlString.isBlank()) return false
+            if (urlString.any { it.isWhitespace() }) return false
             return try {
-                URL(urlString)
+                val url = URL(urlString)
+                if (url.host.isNullOrBlank()) return false
                 urlString.startsWith("http://") || urlString.startsWith("https://")
             } catch (e: Exception) {
                 false
