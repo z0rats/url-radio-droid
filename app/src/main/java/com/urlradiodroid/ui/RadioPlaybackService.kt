@@ -7,8 +7,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
-import android.os.Build
 import android.net.Network
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.net.Uri
 import android.os.Binder
 import android.os.Handler
@@ -52,6 +53,9 @@ class RadioPlaybackService : MediaSessionService() {
     /** Estimated playback position (ms) for timeshift seek when player reports 0 for live-style source. */
     private var lastSeekPositionMs: Long = 0L
     private var lastSeekTimeMs: Long = 0L
+
+    /** Current stream URL; kept so we can restart playback when network is restored. */
+    private var currentStreamUrl: String? = null
 
     /** True when playback failed due to network; we retry when network is back (e.g. VPN reconnect). */
     private var pendingRetry = false
@@ -216,7 +220,7 @@ class RadioPlaybackService : MediaSessionService() {
                 }
 
                 override fun getCurrentContentText(player: Player): CharSequence {
-                    return getString(R.string.app_name)
+                    return if (pendingRetry) getString(R.string.reconnecting) else getString(R.string.app_name)
                 }
 
                 override fun getCurrentLargeIcon(
@@ -267,6 +271,7 @@ class RadioPlaybackService : MediaSessionService() {
     private fun startPlayback(streamUrl: String) {
         val exoPlayer = player ?: return
         Log.d(TAG, "startPlayback: isHls=${isHlsUrl(streamUrl)}, url=${streamUrl.take(60)}")
+        currentStreamUrl = streamUrl
         pendingRetry = false
         stopTimeshiftRecorder()
         registerNetworkCallback()
@@ -315,7 +320,9 @@ class RadioPlaybackService : MediaSessionService() {
             recorder.start {
                 mainHandler.post {
                     markConnectionError()
-                    stopPlayback()
+                    pendingRetry = true
+                    stopTimeshiftRecorder()
+                    notificationManager?.invalidate()
                 }
             }
             val dataSourceFactory = LiveFileDataSource.Factory(
@@ -354,17 +361,22 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     private fun tryResumePlaybackAfterNetworkRestored() {
+        if (!isNetworkValidated()) return
+        val url = currentStreamUrl ?: player?.currentMediaItem?.mediaId ?: return
         val p = player ?: return
-        if (p.currentMediaItem == null) return
-        // Retry when we had set pendingRetry (network error) or player is in IDLE (e.g. connection lost without our error code).
-        val shouldRetry = pendingRetry ||
-            p.playbackState == Player.STATE_IDLE
+        // Retry when we had set pendingRetry (network error) or player is in IDLE (e.g. connection lost).
+        val shouldRetry = pendingRetry || p.playbackState == Player.STATE_IDLE
         if (!shouldRetry) return
-        pendingRetry = false
-        Log.d(TAG, "tryResumePlaybackAfterNetworkRestored: state=${p.playbackState}, preparing and playing")
-        p.prepare()
-        p.play()
-        notificationManager?.invalidate()
+        Log.d(TAG, "tryResumePlaybackAfterNetworkRestored: state=${p.playbackState}, restarting playback")
+        startPlayback(url)
+    }
+
+    private fun isNetworkValidated(): Boolean {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
     private fun isHlsUrl(url: String): Boolean =
@@ -378,6 +390,7 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     fun stopPlayback() {
+        currentStreamUrl = null
         pendingRetry = false
         unregisterNetworkCallback()
         stopTimeshiftRecorder()
@@ -479,6 +492,7 @@ class RadioPlaybackService : MediaSessionService() {
     }
 
     private fun releasePlayer() {
+        currentStreamUrl = null
         pendingRetry = false
         unregisterNetworkCallback()
         stopTimeshiftRecorder()
