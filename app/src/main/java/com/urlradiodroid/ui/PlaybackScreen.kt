@@ -68,11 +68,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.urlradiodroid.R
+import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
 import com.urlradiodroid.ui.theme.background_gradient_mid
 import com.urlradiodroid.ui.theme.background_gradient_start
 import com.urlradiodroid.ui.theme.card_border
+import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.glass_primary
@@ -364,7 +366,7 @@ fun PlaybackScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(24.dp),
+                        .padding(Spacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Card(
@@ -372,20 +374,20 @@ fun PlaybackScreen(
                         Modifier
                             .fillMaxWidth()
                             .widthIn(max = 520.dp)
-                            .border(width = 1.dp, color = card_border, shape = RoundedCornerShape(24.dp)),
+                            .border(width = 1.dp, color = card_border, shape = MaterialTheme.shapes.large),
                     colors =
                         CardDefaults.cardColors(
                             containerColor = glass_primary,
                         ),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.large,
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier.padding(Spacing.lg),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement =
                             androidx.compose.foundation.layout.Arrangement
-                                .spacedBy(16.dp),
+                                .spacedBy(Spacing.md),
                     ) {
                         Text(
                             text = EmojiGenerator.getEmojiForStation(displayName, streamUrl ?: ""),
@@ -443,7 +445,7 @@ fun PlaybackScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .height(72.dp),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ) {
                             Text(
                                 text =
@@ -464,8 +466,8 @@ fun PlaybackScreen(
                                     .background(
                                         if (sleepTimerActive) glass_accent.copy(alpha = 0.22f) else card_surface_active,
                                     ).clickable { sleepTimerDialogOpen = true }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    .padding(horizontal = Spacing.md, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
@@ -491,6 +493,9 @@ fun PlaybackScreen(
                         if (sleepTimerDialogOpen) {
                             AlertDialog(
                                 onDismissRequest = { sleepTimerDialogOpen = false },
+                                containerColor = card_surface,
+                                titleContentColor = text_primary,
+                                textContentColor = text_primary,
                                 title = { Text(stringResource(R.string.sleep_timer)) },
                                 text = {
                                     Column {

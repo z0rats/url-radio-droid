@@ -3,9 +3,9 @@ package com.urlradiodroid.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStation
+import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.card_border
 import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.card_surface_active
@@ -76,7 +76,7 @@ fun StationItem(
     var isSwipeRevealed by remember { mutableStateOf(false) }
     // Wide enough to reveal 3 action buttons (Edit, Share, Delete): 3 * 48dp + 2 * 8dp spacing + 16dp end padding.
     val revealThreshold = 184.dp
-    val cardSpacing = 8.dp
+    val cardSpacing = Spacing.sm
     val revealThresholdPx = with(density) { revealThreshold.toPx() }
     val cardSpacingPx = with(density) { cardSpacing.toPx() }
 
@@ -188,15 +188,15 @@ private fun SwipeActionsBackground(
                 .height(80.dp)
                 .background(
                     color = card_surface,
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.large,
                 ),
     ) {
         Row(
             modifier =
                 Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(end = Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
@@ -205,7 +205,7 @@ private fun SwipeActionsBackground(
                     Modifier
                         .background(
                             color = MaterialTheme.colorScheme.primary,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ),
             ) {
                 Icon(
@@ -220,7 +220,7 @@ private fun SwipeActionsBackground(
                     Modifier
                         .background(
                             color = MaterialTheme.colorScheme.secondary,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ),
             ) {
                 Icon(
@@ -235,7 +235,7 @@ private fun SwipeActionsBackground(
                     Modifier
                         .background(
                             color = MaterialTheme.colorScheme.error,
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ),
             ) {
                 Icon(
@@ -268,34 +268,24 @@ private fun StationCard(
         }
 
     Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .then(
-                    if (isActive) {
-                        Modifier.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                            shape = RoundedCornerShape(24.dp),
-                        )
-                    } else {
-                        Modifier.border(
-                            width = 1.dp,
-                            color = card_border,
-                            shape = RoundedCornerShape(24.dp),
-                        )
-                    },
-                ).clickable(onClick = onCardClick),
+        onClick = onCardClick,
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = MaterialTheme.shapes.large,
+        border =
+            if (isActive) {
+                BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+            } else {
+                BorderStroke(1.dp, card_border)
+            },
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = 20.dp, vertical = Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -366,8 +356,8 @@ private fun PlayPauseIcon(
         modifier =
             modifier
                 .size(48.dp)
-                .clickable(onClick = onClick)
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(MaterialTheme.shapes.extraSmall)
+                .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Image(

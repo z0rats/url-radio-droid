@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Replay
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStation
+import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.card_border
 import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.card_surface_active
@@ -187,6 +187,7 @@ fun NowPlayingBottomBar(
                                     Modifier
                                         .width(cardWidth)
                                         .height(80.dp)
+                                        .clip(MaterialTheme.shapes.extraLarge)
                                         .clickable(onClick = onCardClick),
                             ) {
                                 MiniPlayerCardFull(
@@ -224,16 +225,16 @@ private fun MiniPlayerCardPreview(station: RadioStation) {
             Modifier
                 .fillMaxWidth()
                 .height(80.dp)
-                .border(width = 1.dp, color = card_border, shape = RoundedCornerShape(40.dp)),
+                .border(width = 1.dp, color = card_border, shape = MaterialTheme.shapes.extraLarge),
         colors = CardDefaults.cardColors(containerColor = card_surface),
-        shape = RoundedCornerShape(40.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = Spacing.md, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -250,7 +251,7 @@ private fun MiniPlayerCardPreview(station: RadioStation) {
                         station.customIcon
                             ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(4.dp),
+                    modifier = Modifier.padding(Spacing.xs),
                 )
             }
             Column(
@@ -293,17 +294,17 @@ private fun MiniPlayerCardFull(
             Modifier
                 .fillMaxWidth()
                 .height(80.dp)
-                .border(width = 1.dp, color = card_border, shape = RoundedCornerShape(40.dp)),
+                .border(width = 1.dp, color = card_border, shape = MaterialTheme.shapes.extraLarge),
         colors = CardDefaults.cardColors(containerColor = card_surface),
-        shape = RoundedCornerShape(40.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = Spacing.md, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -319,7 +320,7 @@ private fun MiniPlayerCardFull(
                         station.customIcon
                             ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
                     style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(4.dp),
+                    modifier = Modifier.padding(Spacing.xs),
                 )
             }
 

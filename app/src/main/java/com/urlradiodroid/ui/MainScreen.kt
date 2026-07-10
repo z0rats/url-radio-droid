@@ -76,6 +76,7 @@ import com.urlradiodroid.data.StationBackupJson
 import com.urlradiodroid.ui.components.NowPlayingBottomBar
 import com.urlradiodroid.ui.components.PlaybackStatus
 import com.urlradiodroid.ui.components.StationItem
+import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
 import com.urlradiodroid.ui.theme.background_gradient_mid
@@ -492,7 +493,7 @@ fun MainScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .windowInsetsPadding(WindowInsets.navigationBars)
-                                    .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                                    .padding(start = Spacing.md, end = Spacing.md, bottom = Spacing.lg),
                         )
                     }
                 }
@@ -543,7 +544,7 @@ fun MainScreen(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                         placeholder = { Text(stringResource(R.string.search_stations)) },
                         colors =
                             TextFieldDefaults.colors(
@@ -552,9 +553,7 @@ fun MainScreen(
                                 focusedTextColor = text_secondary,
                                 unfocusedTextColor = text_secondary,
                             ),
-                        shape =
-                            androidx.compose.foundation.shape
-                                .RoundedCornerShape(16.dp),
+                        shape = MaterialTheme.shapes.medium,
                     )
                 }
 
@@ -585,7 +584,7 @@ fun MainScreen(
                             style = MaterialTheme.typography.titleLarge,
                             color = text_secondary,
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(Spacing.sm))
                         Text(
                             text = stringResource(R.string.no_stations),
                             style = MaterialTheme.typography.bodyLarge,
@@ -601,8 +600,14 @@ fun MainScreen(
                         // Scaffold reserves space for bottomBar but not for the floating action
                         // button, which just overlays content - extra bottom padding here keeps
                         // the last station's play button clear of the FAB when the list is long.
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding =
+                            PaddingValues(
+                                start = Spacing.md,
+                                end = Spacing.md,
+                                top = Spacing.sm,
+                                bottom = 88.dp,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         items(

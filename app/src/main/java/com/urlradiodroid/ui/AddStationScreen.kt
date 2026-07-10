@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStationRepository
+import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
 import com.urlradiodroid.ui.theme.background_gradient_mid
@@ -182,7 +182,7 @@ fun AddStationScreen(
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(24.dp),
+                        .padding(Spacing.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Card(
@@ -190,16 +190,16 @@ fun AddStationScreen(
                         Modifier
                             .fillMaxWidth()
                             .widthIn(max = 520.dp)
-                            .border(width = 1.dp, color = card_border, shape = RoundedCornerShape(24.dp)),
+                            .border(width = 1.dp, color = card_border, shape = MaterialTheme.shapes.large),
                     colors = CardDefaults.cardColors(containerColor = card_surface),
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.large,
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Spacing.md),
                         verticalArrangement =
                             androidx.compose.foundation.layout.Arrangement
-                                .spacedBy(16.dp),
+                                .spacedBy(Spacing.md),
                     ) {
                         OutlinedTextField(
                             value = uiState.name,
@@ -224,7 +224,7 @@ fun AddStationScreen(
                                     unfocusedIndicatorColor = text_hint.copy(alpha = 0.5f),
                                     errorIndicatorColor = MaterialTheme.colorScheme.error,
                                 ),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         )
 
                         OutlinedTextField(
@@ -250,7 +250,7 @@ fun AddStationScreen(
                                     unfocusedIndicatorColor = text_hint.copy(alpha = 0.5f),
                                     errorIndicatorColor = MaterialTheme.colorScheme.error,
                                 ),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         )
 
                         Button(
@@ -260,7 +260,7 @@ fun AddStationScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
+                            shape = MaterialTheme.shapes.medium,
                         ) {
                             Text(stringResource(R.string.save))
                         }
