@@ -17,6 +17,7 @@ A minimalist Android application for listening to internet radio via direct stre
 - **🔎 Discover stations**: search the [Radio Browser](https://api.radio-browser.info/) public directory by name, genre, or country and add results straight to your library, no need to hunt down stream URLs yourself
 - 📜 View list of saved stations with search (when more than 4 stations)
 - **⭐ Favorites / pinning**: tap the star on any station to pin it to the top of the list; pinned stations stay sorted above the rest
+- **📱 App Shortcuts**: long-press the launcher icon for one-tap play of your last-played and favorite station, no need to open the app first
 - ▶️ Play streams using ExoPlayer
 - 🔇 Background playback support with media notifications
 - **🎯 Unified player and list state**: the bottom mini player and the active list item always show the same station and play/pause state
@@ -145,6 +146,7 @@ app/src/main/
 │   └── util/
 │       ├── EmojiGenerator.kt
 │       ├── StreamValidator.kt       # HEAD/GET reachability probe before a station is saved
+│       ├── AppShortcuts.kt          # Long-press launcher icon: last-played/favorite station shortcuts
 │       └── StationShare.kt          # Share JSON backup via Intent.ACTION_SEND (FileProvider)
 └── res/
     ├── values/                      # Strings, colors, themes
@@ -182,6 +184,7 @@ The project includes unit tests for:
 - **StationShare** - share-sheet intent (`ACTION_SEND`), file name sanitization, backup file contents
 - **RadioPlaybackServiceLogicTest** - HLS detection, retry backoff, retryable-error classification
 - **DiscoverStationsViewModel** - debounced search, duplicate/name-collision handling on add
+- **AppShortcuts** - dynamic shortcut set for last-played/favorite station, dedup when they're the same station
 
 Screenshot (pixel-diff) tests use [Roborazzi](https://github.com/takahirom/roborazzi) over Robolectric's native-graphics mode, catching visual regressions (clipped shadows, invisible text) that a plain unit test can't. Reference images live in `app/src/test/screenshots/` and are committed to the repo.
 

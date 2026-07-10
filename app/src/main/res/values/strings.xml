@@ -72,4 +72,6 @@
     <string name="discover_prompt">Search the Radio Browser directory to find stations to add</string>
     <string name="discover_add">Add</string>
     <string name="discover_added">Added</string>
+    <string name="shortcut_last_played">Continue: %1$s</string>
+    <string name="shortcut_favorite">Favorite: %1$s</string>
 </resources>

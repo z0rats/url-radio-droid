@@ -96,6 +96,7 @@ class PlaybackActivity : ComponentActivity() {
         const val EXTRA_STATION_ID = "station_id"
         const val EXTRA_STATION_NAME = "station_name"
         const val EXTRA_STREAM_URL = "stream_url"
+        const val EXTRA_AUTO_PLAY = "auto_play"
     }
 
     private val serviceConnection =
@@ -183,6 +184,13 @@ class PlaybackActivity : ComponentActivity() {
         if (intentStationName != null && intentStreamUrl != null) {
             stationName = intentStationName
             streamUrl = intentStreamUrl
+            // Launched from an App Shortcut (long-press launcher icon): start playing immediately
+            // instead of just showing the screen and waiting for the user to tap Play. At this
+            // point the service isn't bound yet, so togglePlayback() takes its "service == null"
+            // branch and starts it directly, same as a cold-start play from the station list.
+            if (intent.getBooleanExtra(EXTRA_AUTO_PLAY, false)) {
+                togglePlayback()
+            }
             return
         }
 

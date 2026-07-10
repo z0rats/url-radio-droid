@@ -94,6 +94,7 @@ import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.text_primary
 import com.urlradiodroid.ui.theme.text_secondary
+import com.urlradiodroid.util.AppShortcuts
 import com.urlradiodroid.util.StationShare
 import kotlinx.coroutines.launch
 
@@ -306,6 +307,14 @@ fun MainScreen(
     val allStations by viewModel.stations.collectAsState(initial = emptyList())
     val searchQuery by viewModel.searchQuery.collectAsState()
     val currentPlayingStationId by viewModel.currentPlayingStationId.collectAsState()
+
+    // Keeps the long-press App Shortcuts (last played / favorite station) in sync. Re-runs on
+    // every loadStations() (including plain onResume), which also happens to be the moment the
+    // last-played shortcut picks up any playback started elsewhere in the meantime.
+    val shortcutsContext = LocalContext.current
+    LaunchedEffect(allStations) {
+        AppShortcuts.refresh(shortcutsContext, allStations)
+    }
 
     // Find current playing station by ID
     val currentPlayingStation =
