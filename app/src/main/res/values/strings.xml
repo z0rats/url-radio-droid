@@ -74,4 +74,11 @@
     <string name="discover_added">Added</string>
     <string name="shortcut_last_played">Continue: %1$s</string>
     <string name="shortcut_favorite">Favorite: %1$s</string>
+    <string name="alarm">Alarm</string>
+    <string name="alarm_time">Wake-up time</string>
+    <string name="alarm_station">Station</string>
+    <string name="alarm_select_station">Select a station</string>
+    <string name="alarm_no_stations">Add a station first to set a wake-up alarm</string>
+    <string name="alarm_enabled_toast">Alarm set for %1$s</string>
+    <string name="alarm_disabled_toast">Alarm turned off</string>
 </resources>

@@ -30,6 +30,7 @@ A minimalist Android application for listening to internet radio via direct stre
 - **🔁 Reliable background playback**: automatically resumes the last station if the system kills and restarts the app process; reconnects on network loss with capped exponential backoff (up to 5 attempts) instead of hammering the stream or retrying forever
 - **🎶 Live track title**: shows the current track (from ICY/Shoutcast metadata, when the stream provides it) in the mini player and playback screen, with a one-tap copy-to-clipboard button
 - **😴 Sleep timer**: stop playback automatically after 15/30/45/60 minutes, with a live countdown shown on the playback screen
+- **⏰ Wake-up alarm**: set a daily alarm (time + station) from the overflow menu; fires via the system alarm clock even if the app isn't running, and reschedules itself for the next day automatically
 - 💾 Local data storage using Room Database, with unique name/URL constraints enforced at the DB level and safe migrations (no data loss on upgrade)
 - **📤 Export / share / import stations**: back up all your stations to a JSON file (favorite status included) or share it to another app, share a single station straight from its list item, and import a backup (e.g. after reinstalling or switching devices)
 - 🎨 Modern UI with Jetpack Compose (liquid glass style)
@@ -133,11 +134,16 @@ app/src/main/
 │   │   ├── DiscoverStationsViewModel.kt # Debounced search state, add/duplicate handling
 │   │   ├── PlaybackScreen.kt        # Full playback screen (track title, sleep timer)
 │   │   ├── RadioPlaybackService.kt  # Background playback service (retry backoff, sleep timer)
+│   │   ├── AlarmScreen.kt           # Wake-up alarm settings (enable, time, station)
+│   │   ├── AlarmScheduler.kt        # AlarmManager.setAlarmClock scheduling, next-trigger-time math
+│   │   ├── AlarmReceiver.kt         # Fires at alarm time: starts playback, reschedules for tomorrow
+│   │   ├── BootReceiver.kt          # Reschedules the alarm after a reboot clears AlarmManager
 │   │   ├── playback/
 │   │   │   ├── StreamRecorder.kt        # Records stream to buffer file (OkHttp), parses ICY metadata
 │   │   │   ├── LiveFileDataSource.kt    # Media3 DataSource: read buffer, block at EOF
 │   │   │   ├── TimeshiftController.kt   # Buffer file lifecycle + seek math for rewind/live
-│   │   │   └── PlaybackStateStore.kt    # Persists last station so playback can resume after process death
+│   │   │   ├── PlaybackStateStore.kt    # Persists last station so playback can resume after process death
+│   │   │   └── AlarmStateStore.kt       # Persists the wake-up alarm (enabled, time, station)
 │   │   ├── components/
 │   │   │   ├── NowPlayingBottomBar.kt  # Mini player: play/pause, rewind 5s, live, track title
 │   │   │   ├── StationItem.kt          # Station list item (favorite toggle, swipe to edit/share/delete)
@@ -185,6 +191,9 @@ The project includes unit tests for:
 - **RadioPlaybackServiceLogicTest** - HLS detection, retry backoff, retryable-error classification
 - **DiscoverStationsViewModel** - debounced search, duplicate/name-collision handling on add
 - **AppShortcuts** - dynamic shortcut set for last-played/favorite station, dedup when they're the same station
+- **AlarmScheduler** - next-trigger-time math (today vs. tomorrow, including the exactly-now edge case)
+- **AlarmStateStore** - save/restore round-trip, including a saved-but-disabled alarm
+- **AlarmReceiver** - starts playback with the saved station's extras when enabled, no-ops when disabled or unset
 
 Screenshot (pixel-diff) tests use [Roborazzi](https://github.com/takahirom/roborazzi) over Robolectric's native-graphics mode, catching visual regressions (clipped shadows, invisible text) that a plain unit test can't. Reference images live in `app/src/test/screenshots/` and are committed to the repo.
 

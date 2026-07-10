@@ -175,6 +175,9 @@ class MainActivity : ComponentActivity() {
                     onDiscoverStationsClick = {
                         discoverStationsLauncher.launch(Intent(this, DiscoverStationsActivity::class.java))
                     },
+                    onAlarmClick = {
+                        startActivity(Intent(this, AlarmActivity::class.java))
+                    },
                     onStationEdit = { station ->
                         val intent =
                             Intent(this, AddStationActivity::class.java).apply {
@@ -295,6 +298,7 @@ fun MainScreen(
     viewModel: MainViewModel,
     onAddStationClick: () -> Unit,
     onDiscoverStationsClick: () -> Unit,
+    onAlarmClick: () -> Unit,
     onStationEdit: (RadioStation) -> Unit,
     onStationDelete: (RadioStation) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
@@ -591,6 +595,13 @@ fun MainScreen(
                                 onClick = {
                                     showMenu = false
                                     importLauncher.launch(arrayOf("application/json"))
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.alarm)) },
+                                onClick = {
+                                    showMenu = false
+                                    onAlarmClick()
                                 },
                             )
                         }
