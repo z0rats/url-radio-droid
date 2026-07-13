@@ -105,6 +105,10 @@ class LocationProvider(
     }
 
     companion object {
-        private const val DEFAULT_TIMEOUT_MS = 10_000L
+        // A cold-start GPS fix (no recent cached location, no network-provider assist) can
+        // realistically take 15-20s, especially indoors — 10s was cutting that off before a fix
+        // ever arrived on real devices, surfacing as "couldn't determine your location" even with
+        // location services genuinely on.
+        private const val DEFAULT_TIMEOUT_MS = 20_000L
     }
 }

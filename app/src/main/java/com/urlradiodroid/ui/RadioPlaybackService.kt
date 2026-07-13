@@ -47,6 +47,7 @@ import com.urlradiodroid.ui.playback.PlaybackStateStore
 import com.urlradiodroid.ui.playback.TimeshiftController
 import com.urlradiodroid.ui.playback.WidgetStateStore
 import com.urlradiodroid.util.EmojiGenerator
+import com.urlradiodroid.util.IconStorage
 import com.urlradiodroid.widget.RadioWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +76,16 @@ class RadioPlaybackService : MediaLibraryService() {
     private var player: ExoPlayer? = null
     private var notificationManager: PlayerNotificationManager? = null
     private var stationName: String? = null
+
+    /**
+     * The current station's [RadioStation.customIcon] (emoji string or image file path), used by
+     * [getCurrentLargeIcon] for the notification's large icon instead of always falling back to
+     * the auto-generated emoji. Set by whichever entry point resolves the full [RadioStation]
+     * (`onStartCommand`'s direct-play/resume branches, [playFromBrowseTree]) before starting
+     * playback — same "caller sets it before calling `applyPlayback`" contract as [stationName],
+     * and likewise untouched across a network-loss retry of the same stream.
+     */
+    private var currentCustomIcon: String? = null
 
     private lateinit var timeshift: TimeshiftController
     private lateinit var playbackStateStore: PlaybackStateStore
@@ -195,6 +206,7 @@ class RadioPlaybackService : MediaLibraryService() {
             // up here by URL instead of threading them through every intent-creation call site.
             serviceScope.launch {
                 val station = repository.getStationByUrl(streamUrl)
+                currentCustomIcon = station?.customIcon
                 startPlayback(streamUrl, knownHls = station?.isHls)
                 // A genuine new play (as opposed to the process-restart resume branch below):
                 // register it as a "click" with the directory if this station came from Discover.
@@ -208,8 +220,9 @@ class RadioPlaybackService : MediaLibraryService() {
                 Log.d(TAG, "onStartCommand: restoring last station after service restart")
                 stationName = saved.stationName
                 serviceScope.launch {
-                    val knownHls = repository.getStationByUrl(saved.streamUrl)?.isHls
-                    startPlayback(saved.streamUrl, knownHls = knownHls)
+                    val station = repository.getStationByUrl(saved.streamUrl)
+                    currentCustomIcon = station?.customIcon
+                    startPlayback(saved.streamUrl, knownHls = station?.isHls)
                 }
             } else {
                 stopSelf()
@@ -410,11 +423,16 @@ class RadioPlaybackService : MediaLibraryService() {
                             player: Player,
                             callback: PlayerNotificationManager.BitmapCallback,
                         ): android.graphics.Bitmap? {
+                            val customIcon = currentCustomIcon
+                            if (customIcon != null && IconStorage.isImagePath(customIcon)) {
+                                IconStorage.decodeBitmap(customIcon)?.let { return it }
+                            }
                             val emoji =
-                                EmojiGenerator.getEmojiForStation(
-                                    stationName ?: getString(R.string.unknown_station),
-                                    player.currentMediaItem?.mediaId ?: "",
-                                )
+                                customIcon?.takeUnless(IconStorage::isImagePath)
+                                    ?: EmojiGenerator.getEmojiForStation(
+                                        stationName ?: getString(R.string.unknown_station),
+                                        player.currentMediaItem?.mediaId ?: "",
+                                    )
                             return EmojiGenerator.getEmojiBitmap(emoji, 128)
                         }
 
@@ -654,6 +672,7 @@ class RadioPlaybackService : MediaLibraryService() {
         cancelSleepTimer()
         currentStreamUrl = null
         currentKnownHls = null
+        currentCustomIcon = null
         pendingRetry = false
         playbackStateStore.clear()
         unregisterNetworkCallback()
@@ -825,6 +844,7 @@ class RadioPlaybackService : MediaLibraryService() {
     internal fun playFromBrowseTree(mediaId: String): Boolean {
         val station = cachedStations.find { it.streamUrl == mediaId } ?: return false
         stationName = station.name
+        currentCustomIcon = station.customIcon
         applyPlayback(station.streamUrl, knownHls = station.isHls)
         station.radioBrowserUuid?.let { uuid -> serviceScope.launch { radioBrowserApi.registerClick(uuid) } }
         return true
