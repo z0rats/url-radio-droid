@@ -38,7 +38,9 @@ class RadioStationRepository(
         excludeId: Long = 0,
     ): Boolean = dao.findStationByUrl(url, excludeId) != null
 
-    /** Serializes all stations to a JSON array of `{name, streamUrl, customIcon, isFavorite, genre}` objects. */
+    suspend fun getStationByUrl(url: String): RadioStation? = dao.findStationByUrl(url)
+
+    /** Serializes all stations to a JSON array of `{name, streamUrl, customIcon, isFavorite, genre, isHls, radioBrowserUuid}` objects. */
     suspend fun exportStationsToJson(): String = StationBackupJson.toJsonArray(dao.getAllStations())
 
     /**
@@ -82,8 +84,23 @@ class RadioStationRepository(
                 } else {
                     obj.optString("genre").ifBlank { null }
                 }
+            val isHls = obj.optBoolean("isHls", false)
+            val radioBrowserUuid =
+                if (!obj.has("radioBrowserUuid") || obj.isNull("radioBrowserUuid")) {
+                    null
+                } else {
+                    obj.optString("radioBrowserUuid").ifBlank { null }
+                }
             insertStation(
-                RadioStation(name = name, streamUrl = url, customIcon = icon, isFavorite = isFavorite, genre = genre),
+                RadioStation(
+                    name = name,
+                    streamUrl = url,
+                    customIcon = icon,
+                    isFavorite = isFavorite,
+                    genre = genre,
+                    isHls = isHls,
+                    radioBrowserUuid = radioBrowserUuid,
+                ),
             )
             imported++
         }

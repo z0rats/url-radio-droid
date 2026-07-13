@@ -1,11 +1,20 @@
 package com.urlradiodroid.ui
 
+import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,9 +26,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,13 +54,18 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioBrowserStation
@@ -61,7 +81,10 @@ import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.text_hint
 import com.urlradiodroid.ui.theme.text_primary
 import com.urlradiodroid.ui.theme.text_secondary
+import com.urlradiodroid.util.CountryFlagEmoji
 import com.urlradiodroid.util.EmojiGenerator
+import com.urlradiodroid.util.VoteCountFormatter
+import java.util.Locale
 
 class DiscoverStationsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +92,7 @@ class DiscoverStationsActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val repository = RadioStationRepository.create(this)
-        val viewModelFactory = DiscoverStationsViewModel.provideFactory(repository)
+        val viewModelFactory = DiscoverStationsViewModel.provideFactory(repository, this)
 
         setContent {
             URLRadioDroidTheme {
@@ -90,6 +113,48 @@ fun DiscoverStationsScreen(
     onBackClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var showLocationRationale by remember { mutableStateOf(false) }
+
+    val locationPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) viewModel.searchNearby() else viewModel.onLocationPermissionDenied()
+        }
+
+    fun requestNearbySearch() {
+        val hasPermission =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            viewModel.searchNearby()
+        } else {
+            showLocationRationale = true
+        }
+    }
+
+    if (showLocationRationale) {
+        AlertDialog(
+            onDismissRequest = { showLocationRationale = false },
+            title = { Text(stringResource(R.string.discover_location_permission_title)) },
+            text = { Text(stringResource(R.string.discover_location_permission_rationale)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLocationRationale = false
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                }) {
+                    Text(stringResource(R.string.discover_location_permission_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showLocationRationale = false
+                    viewModel.onLocationPermissionDenied()
+                }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
 
     Box(
         modifier =
@@ -131,7 +196,11 @@ fun DiscoverStationsScreen(
         ) { paddingValues ->
             Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 ) {
                     SearchModeChip(
@@ -149,31 +218,58 @@ fun DiscoverStationsScreen(
                         selected = uiState.mode == DiscoverSearchMode.COUNTRY,
                         onClick = { viewModel.onModeChange(DiscoverSearchMode.COUNTRY) },
                     )
+                    SearchModeChip(
+                        label = stringResource(R.string.discover_search_mode_language),
+                        selected = uiState.mode == DiscoverSearchMode.LANGUAGE,
+                        onClick = { viewModel.onModeChange(DiscoverSearchMode.LANGUAGE) },
+                    )
+                    SearchModeChip(
+                        label = stringResource(R.string.discover_search_mode_nearby),
+                        selected = uiState.mode == DiscoverSearchMode.NEARBY,
+                        icon = Icons.Default.LocationOn,
+                        onClick = {
+                            if (uiState.mode != DiscoverSearchMode.NEARBY) {
+                                viewModel.onModeChange(DiscoverSearchMode.NEARBY)
+                            }
+                            requestNearbySearch()
+                        },
+                    )
                 }
 
-                val hint =
-                    when (uiState.mode) {
-                        DiscoverSearchMode.NAME -> stringResource(R.string.discover_search_hint_name)
-                        DiscoverSearchMode.GENRE -> stringResource(R.string.discover_search_hint_genre)
-                        DiscoverSearchMode.COUNTRY -> stringResource(R.string.discover_search_hint_country)
+                if (uiState.mode == DiscoverSearchMode.NEARBY) {
+                    if (uiState.locationPermissionDenied) {
+                        CenteredHint(
+                            stringResource(R.string.discover_location_permission_denied),
+                            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                        )
                     }
-                TextField(
-                    value = uiState.query,
-                    onValueChange = viewModel::onQueryChange,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
-                    placeholder = { Text(hint) },
-                    singleLine = true,
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = card_surface,
-                            unfocusedContainerColor = card_surface,
-                            focusedTextColor = text_primary,
-                            unfocusedTextColor = text_primary,
-                            focusedPlaceholderColor = text_hint,
-                            unfocusedPlaceholderColor = text_hint,
-                        ),
-                    shape = MaterialTheme.shapes.medium,
-                )
+                } else {
+                    val hint =
+                        when (uiState.mode) {
+                            DiscoverSearchMode.NAME -> stringResource(R.string.discover_search_hint_name)
+                            DiscoverSearchMode.GENRE -> stringResource(R.string.discover_search_hint_genre)
+                            DiscoverSearchMode.COUNTRY -> stringResource(R.string.discover_search_hint_country)
+                            DiscoverSearchMode.LANGUAGE -> stringResource(R.string.discover_search_hint_language)
+                            DiscoverSearchMode.NEARBY -> ""
+                        }
+                    TextField(
+                        value = uiState.query,
+                        onValueChange = viewModel::onQueryChange,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                        placeholder = { Text(hint) },
+                        singleLine = true,
+                        colors =
+                            TextFieldDefaults.colors(
+                                focusedContainerColor = card_surface,
+                                unfocusedContainerColor = card_surface,
+                                focusedTextColor = text_primary,
+                                unfocusedTextColor = text_primary,
+                                focusedPlaceholderColor = text_hint,
+                                unfocusedPlaceholderColor = text_hint,
+                            ),
+                        shape = MaterialTheme.shapes.medium,
+                    )
+                }
 
                 DiscoverResultsContent(
                     uiState = uiState,
@@ -190,11 +286,22 @@ private fun SearchModeChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         label = { Text(label) },
+        leadingIcon =
+            icon?.let {
+                {
+                    Icon(
+                        imageVector = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(FilterChipDefaults.IconSize),
+                    )
+                }
+            },
         colors =
             FilterChipDefaults.filterChipColors(
                 containerColor = card_surface,
@@ -209,6 +316,20 @@ private fun SearchModeChip(
                 borderColor = card_border,
                 selectedBorderColor = glass_accent,
             ),
+    )
+}
+
+@Composable
+private fun CenteredHint(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = text_hint,
+        modifier = modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
     )
 }
 
@@ -272,6 +393,8 @@ private fun DiscoverResultCard(
     isAdded: Boolean,
     onAddClick: () -> Unit,
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier =
             Modifier.fillMaxWidth().border(
@@ -314,6 +437,44 @@ private fun DiscoverResultCard(
                 )
             }
 
+            if (station.votes > 0) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = text_hint,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Text(
+                        text = VoteCountFormatter.format(station.votes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = text_hint,
+                    )
+                }
+            }
+
+            if (station.sslError) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = stringResource(R.string.discover_ssl_warning),
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+
+            if (station.homepage.isNotBlank()) {
+                IconButton(onClick = { openWebsite(context, station.homepage) }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = stringResource(R.string.visit_website),
+                        tint = text_hint,
+                    )
+                }
+            }
+
             if (isAdded) {
                 Icon(
                     imageVector = Icons.Default.Check,
@@ -329,12 +490,37 @@ private fun DiscoverResultCard(
     }
 }
 
+private fun openWebsite(
+    context: Context,
+    url: String,
+) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    } catch (e: ActivityNotFoundException) {
+        // No app can handle the link (e.g. a malformed homepage URL); nothing sensible to do here.
+    }
+}
+
 private fun stationSubtitle(station: RadioBrowserStation): String {
+    val distancePart =
+        station.distanceKm?.let { km -> "📍 " + String.format(Locale.getDefault(), "%.1f km", km) }
+    val countryPart =
+        station.country.takeIf { it.isNotBlank() }?.let { country ->
+            val flag = CountryFlagEmoji.from(station.countryCode)
+            if (flag != null) "$flag $country" else country
+        }
+    val bitratePart =
+        listOfNotNull(
+            station.bitrate.takeIf { it > 0 }?.let { "$it kbps" },
+            station.codec.takeIf { it.isNotBlank() }?.uppercase(),
+        ).joinToString(" ")
+            .takeIf { it.isNotBlank() }
     val parts =
         listOfNotNull(
-            station.country.takeIf { it.isNotBlank() },
+            distancePart,
+            countryPart,
             station.tags.takeIf { it.isNotBlank() },
-            station.bitrate.takeIf { it > 0 }?.let { "$it kbps" },
+            bitratePart,
         )
     return if (parts.isEmpty()) station.url else parts.joinToString(" • ")
 }

@@ -8,7 +8,8 @@ import java.io.File
 import java.util.UUID
 
 /**
- * Persists station icon images picked via the system photo picker as downscaled JPEGs under
+ * Persists station icon images — picked via the system photo picker ([saveImage]) or downloaded
+ * (a Discover station's favicon, [saveImageBytes]) — as downscaled JPEGs under
  * `filesDir/station_icons/`, so [com.urlradiodroid.data.RadioStation.customIcon] can hold either
  * a short emoji string or an absolute path to one of these files (see the field's doc comment).
  * A leading "/" is what distinguishes a stored image path from an emoji string, since no emoji
@@ -33,16 +34,7 @@ object IconStorage {
             context.contentResolver.openInputStream(uri)?.use { input ->
                 tempFile.outputStream().use { output -> input.copyTo(output) }
             } ?: return null
-
-            val bitmap = decodeSampledBitmap(tempFile) ?: return null
-            val dir = File(context.filesDir, ICONS_DIR).apply { mkdirs() }
-            val file = File(dir, "${UUID.randomUUID()}.jpg")
-            try {
-                file.outputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out) }
-                file.absolutePath
-            } finally {
-                bitmap.recycle()
-            }
+            persistDownscaled(context, tempFile)
         } catch (e: Exception) {
             // Broad catch is deliberate: uri comes from the system photo picker, a boundary we
             // don't control, and any failure along this path (unresolvable uri, corrupt bytes,
@@ -50,6 +42,46 @@ object IconStorage {
             null
         } finally {
             tempFile.delete()
+        }
+    }
+
+    /**
+     * Downscales and copies already-downloaded image bytes (e.g. a station's favicon fetched via
+     * [com.urlradiodroid.data.RadioBrowserApi.downloadFavicon]) into app-private storage; returns
+     * its absolute path, or null on failure. Shares [persistDownscaled] with [saveImage] — the
+     * only difference is where the source bytes came from (a picker `Uri` vs. already-downloaded
+     * bytes).
+     */
+    fun saveImageBytes(
+        context: Context,
+        bytes: ByteArray,
+    ): String? {
+        val tempFile = File.createTempFile("icon_src", null, context.cacheDir)
+        return try {
+            tempFile.outputStream().use { it.write(bytes) }
+            persistDownscaled(context, tempFile)
+        } catch (e: Exception) {
+            // Same broad-catch rationale as saveImage: a favicon URL is an external host we don't
+            // control, and any failure here should just mean "no icon", not a crash.
+            null
+        } finally {
+            tempFile.delete()
+        }
+    }
+
+    /** Decodes [tempFile], downscales it, and writes it as a JPEG under [ICONS_DIR]; returns its absolute path, or null on failure. */
+    private fun persistDownscaled(
+        context: Context,
+        tempFile: File,
+    ): String? {
+        val bitmap = decodeSampledBitmap(tempFile) ?: return null
+        val dir = File(context.filesDir, ICONS_DIR).apply { mkdirs() }
+        val file = File(dir, "${UUID.randomUUID()}.jpg")
+        return try {
+            file.outputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out) }
+            file.absolutePath
+        } finally {
+            bitmap.recycle()
         }
     }
 

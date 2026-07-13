@@ -27,6 +27,10 @@ data class AddStationUiState(
     val isEditing: Boolean = false,
     /** Carried through unedited from the loaded station (this form has no favorite toggle) so save() doesn't clear it. */
     val isFavorite: Boolean = false,
+    /** Carried through unedited from the loaded station (this form has no HLS toggle) so save() doesn't clear it. */
+    val isHls: Boolean = false,
+    /** Carried through unedited from the loaded station (this form has no way to set it) so save() doesn't clear it. */
+    val radioBrowserUuid: String? = null,
 )
 
 sealed interface AddStationEvent {
@@ -65,6 +69,8 @@ class AddStationViewModel(
                             customIcon = station.customIcon,
                             genre = station.genre.orEmpty(),
                             isFavorite = station.isFavorite,
+                            isHls = station.isHls,
+                            radioBrowserUuid = station.radioBrowserUuid,
                         )
                 }
             }
@@ -155,6 +161,8 @@ class AddStationViewModel(
                                     customIcon = finalIcon,
                                     isFavorite = _uiState.value.isFavorite,
                                     genre = finalGenre,
+                                    isHls = _uiState.value.isHls,
+                                    radioBrowserUuid = _uiState.value.radioBrowserUuid,
                                 )
                             } else {
                                 RadioStation(

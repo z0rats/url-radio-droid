@@ -1,0 +1,24 @@
+package com.urlradiodroid.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.urlradiodroid.data.ImportResult
+import com.urlradiodroid.data.RadioStationRepository
+
+class SettingsViewModel(
+    private val repository: RadioStationRepository,
+) : ViewModel() {
+    /** Plain suspend function (not launched internally) so callers get the JSON back to write to a file. */
+    suspend fun exportStationsJson(): String = repository.exportStationsToJson()
+
+    /** Plain suspend function so callers get the [ImportResult] back to show to the user. */
+    suspend fun importStationsJson(json: String): ImportResult = repository.importStationsFromJson(json)
+
+    companion object {
+        fun provideFactory(repository: RadioStationRepository): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T = SettingsViewModel(repository) as T
+            }
+    }
+}

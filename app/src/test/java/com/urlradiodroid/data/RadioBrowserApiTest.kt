@@ -3,8 +3,10 @@ package com.urlradiodroid.data
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -43,8 +45,15 @@ class RadioBrowserApiTest {
                     "url": "http://example.com/stream",
                     "url_resolved": "http://resolved.example.com/stream",
                     "country": "Germany",
+                    "countrycode": "DE",
                     "tags": "pop,talk",
-                    "bitrate": 128
+                    "bitrate": 128,
+                    "hls": 1,
+                    "codec": "MP3",
+                    "votes": 1234,
+                    "homepage": "https://example.com",
+                    "favicon": "https://example.com/favicon.png",
+                    "ssl_error": 1
                   }
                 ]
                 """.trimIndent()
@@ -58,8 +67,40 @@ class RadioBrowserApiTest {
             assertEquals("Test FM", station.name)
             assertEquals("http://resolved.example.com/stream", station.url)
             assertEquals("Germany", station.country)
+            assertEquals("DE", station.countryCode)
             assertEquals("pop,talk", station.tags)
             assertEquals(128, station.bitrate)
+            assertTrue(station.hls)
+            assertEquals("MP3", station.codec)
+            assertEquals(1234, station.votes)
+            assertEquals("https://example.com", station.homepage)
+            assertEquals("https://example.com/favicon.png", station.favicon)
+            assertTrue(station.sslError)
+        }
+
+    @Test
+    fun `search defaults sslError to false when the field is absent`() =
+        runTest {
+            val body = """[{"name":"No Ssl Error Field","url":"http://example.com/a"}]"""
+            server.enqueue(MockResponse().setBody(body))
+
+            val results = api.search("x", RadioBrowserApi.SearchBy.NAME)
+
+            assertFalse(results[0].sslError)
+        }
+
+    @Test
+    fun `search defaults codec, votes, homepage and favicon when the fields are absent`() =
+        runTest {
+            val body = """[{"name":"No Extra Fields","url":"http://example.com/a"}]"""
+            server.enqueue(MockResponse().setBody(body))
+
+            val results = api.search("x", RadioBrowserApi.SearchBy.NAME)
+
+            assertEquals("", results[0].codec)
+            assertEquals(0, results[0].votes)
+            assertEquals("", results[0].homepage)
+            assertEquals("", results[0].favicon)
         }
 
     @Test
@@ -71,6 +112,17 @@ class RadioBrowserApiTest {
             val results = api.search("x", RadioBrowserApi.SearchBy.NAME)
 
             assertEquals("http://example.com/a", results[0].url)
+        }
+
+    @Test
+    fun `search defaults hls to false when the field is absent`() =
+        runTest {
+            val body = """[{"name":"No Hls Field","url":"http://example.com/a"}]"""
+            server.enqueue(MockResponse().setBody(body))
+
+            val results = api.search("x", RadioBrowserApi.SearchBy.NAME)
+
+            assertFalse(results[0].hls)
         }
 
     @Test
@@ -104,11 +156,138 @@ class RadioBrowserApiTest {
             assertTrue(request.path?.contains("tag=jazz") == true)
         }
 
+    @Test
+    fun `search sends a language query under the language param`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("[]"))
+
+            api.search("english", RadioBrowserApi.SearchBy.LANGUAGE)
+
+            val request = server.takeRequest()
+            assertTrue(request.path?.contains("language=english") == true)
+        }
+
     @Test(expected = IOException::class)
     fun `search throws on a non-2xx response`() =
         runTest {
             server.enqueue(MockResponse().setResponseCode(500))
 
             api.search("x", RadioBrowserApi.SearchBy.NAME)
+        }
+
+    @Test
+    fun `searchNearby sends geo params and reads distance in km`() =
+        runTest {
+            val body =
+                """
+                [{"name":"Local FM","url":"http://example.com/local","distance":2500.0}]
+                """.trimIndent()
+            server.enqueue(MockResponse().setBody(body))
+
+            val results = api.searchNearby(latitude = 52.5, longitude = 13.4, radiusMeters = 50_000)
+
+            val request = server.takeRequest()
+            assertTrue(request.path?.startsWith("/json/stations/search") == true)
+            assertTrue(request.path?.contains("geo_lat=52.5") == true)
+            assertTrue(request.path?.contains("geo_long=13.4") == true)
+            assertTrue(request.path?.contains("geo_distance=50000") == true)
+            assertTrue(request.path?.contains("order=distance") == true)
+            assertEquals(1, results.size)
+            assertEquals(2.5, results[0].distanceKm)
+        }
+
+    @Test
+    fun `searchNearby leaves distanceKm null when the field is absent`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("""[{"name":"No Distance","url":"http://example.com/a"}]"""))
+
+            val results = api.searchNearby(latitude = 52.5, longitude = 13.4, radiusMeters = 50_000)
+
+            assertEquals(null, results[0].distanceKm)
+        }
+
+    @Test
+    fun `search leaves distanceKm null since it never sends geo params`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("""[{"name":"Test FM","url":"http://example.com/a"}]"""))
+
+            val results = api.search("x", RadioBrowserApi.SearchBy.NAME)
+
+            assertEquals(null, results[0].distanceKm)
+        }
+
+    @Test(expected = IOException::class)
+    fun `searchNearby throws on a non-2xx response`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(500))
+
+            api.searchNearby(latitude = 52.5, longitude = 13.4, radiusMeters = 50_000)
+        }
+
+    @Test
+    fun `registerClick hits json url with the uuid`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("{}"))
+
+            api.registerClick("abc-123")
+
+            val request = server.takeRequest()
+            assertEquals("/json/url/abc-123", request.path)
+        }
+
+    @Test
+    fun `registerClick swallows a non-2xx response without throwing`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(500))
+
+            api.registerClick("abc-123") // Must not throw.
+        }
+
+    @Test
+    fun `registerClick swallows a network failure without throwing`() =
+        runTest {
+            server.shutdown()
+
+            api.registerClick("abc-123") // Must not throw even though the server is unreachable.
+        }
+
+    @Test
+    fun `downloadFavicon returns the response bytes on success`() =
+        runTest {
+            val bytes = byteArrayOf(1, 2, 3, 4)
+            server.enqueue(MockResponse().setBody(Buffer().write(bytes)))
+
+            val result = api.downloadFavicon(server.url("/favicon.png").toString())
+
+            assertTrue(bytes.contentEquals(result))
+        }
+
+    @Test
+    fun `downloadFavicon returns null on a non-2xx response`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(404))
+
+            val result = api.downloadFavicon(server.url("/favicon.png").toString())
+
+            assertEquals(null, result)
+        }
+
+    @Test
+    fun `downloadFavicon returns null for a malformed url instead of throwing`() =
+        runTest {
+            val result = api.downloadFavicon("not a url")
+
+            assertEquals(null, result)
+        }
+
+    @Test
+    fun `downloadFavicon returns null on a network failure`() =
+        runTest {
+            val url = server.url("/favicon.png").toString()
+            server.shutdown()
+
+            val result = api.downloadFavicon(url)
+
+            assertEquals(null, result)
         }
 }

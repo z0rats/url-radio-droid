@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [RadioStation::class], version = 5, exportSchema = true)
+@Database(entities = [RadioStation::class], version = 7, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun radioStationDao(): RadioStationDao
 
@@ -59,6 +59,33 @@ abstract class AppDatabase : RoomDatabase() {
                 }
             }
 
+        /**
+         * Adds the known-HLS hint from the Radio Browser directory's `hls` flag; existing rows
+         * default to false and fall back to isHlsUrl()'s URL heuristic, same as manual adds.
+         */
+        val MIGRATION_5_6 =
+            object : Migration(5, 6) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE radio_stations ADD COLUMN isHls INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+
+        /**
+         * Adds the Radio Browser directory's stationuuid, used to register plays as "clicks";
+         * existing rows default to null (manual adds, and pre-migration Discover-added stations
+         * that predate this column) and simply don't register clicks.
+         */
+        val MIGRATION_6_7 =
+            object : Migration(6, 7) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE radio_stations ADD COLUMN radioBrowserUuid TEXT DEFAULT NULL",
+                    )
+                }
+            }
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -70,7 +97,13 @@ abstract class AppDatabase : RoomDatabase() {
                             context.applicationContext,
                             AppDatabase::class.java,
                             "radio_database",
-                        ).addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                        ).addMigrations(
+                            MIGRATION_2_3,
+                            MIGRATION_3_4,
+                            MIGRATION_4_5,
+                            MIGRATION_5_6,
+                            MIGRATION_6_7,
+                        )
                         // Safety net only for schema jumps with no explicit migration
                         // (e.g. pre-1.0 installs skipping straight to a future version).
                         .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1)

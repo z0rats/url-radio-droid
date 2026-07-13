@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.os.IBinder
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +40,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -56,6 +56,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -83,6 +84,7 @@ import com.urlradiodroid.data.StationBackupJson
 import com.urlradiodroid.ui.components.NowPlayingBottomBar
 import com.urlradiodroid.ui.components.PlaybackStatus
 import com.urlradiodroid.ui.components.StationItem
+import com.urlradiodroid.ui.playback.SettingsStore
 import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
@@ -177,6 +179,9 @@ class MainActivity : ComponentActivity() {
                     },
                     onAlarmClick = {
                         startActivity(Intent(this, AlarmActivity::class.java))
+                    },
+                    onSettingsClick = {
+                        startActivity(Intent(this, SettingsActivity::class.java))
                     },
                     onStationEdit = { station ->
                         val intent =
@@ -299,6 +304,7 @@ fun MainScreen(
     onAddStationClick: () -> Unit,
     onDiscoverStationsClick: () -> Unit,
     onAlarmClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onStationEdit: (RadioStation) -> Unit,
     onStationDelete: (RadioStation) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
@@ -422,18 +428,6 @@ fun MainScreen(
         }
     }
 
-    val exportChooserTitle = stringResource(R.string.export_stations)
-    val onExportClick: () -> Unit = {
-        coroutineScope.launch {
-            try {
-                val json = viewModel.exportStationsJson()
-                StationShare.share(context, json, exportChooserTitle, "url-radio-droid-stations")
-            } catch (e: Exception) {
-                Toast.makeText(context, context.getString(R.string.export_error), Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     val shareStationTitle = stringResource(R.string.share_station)
     val onStationShareClick: (RadioStation) -> Unit = { station ->
         coroutineScope.launch {
@@ -446,26 +440,15 @@ fun MainScreen(
         }
     }
 
-    val importLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri == null) return@rememberLauncherForActivityResult
-            coroutineScope.launch {
-                try {
-                    val json =
-                        context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-                            ?: throw java.io.IOException("Cannot open file")
-                    val result = viewModel.importStationsJson(json)
-                    Toast
-                        .makeText(
-                            context,
-                            context.getString(R.string.import_result, result.imported, result.skipped),
-                            Toast.LENGTH_LONG,
-                        ).show()
-                } catch (e: Exception) {
-                    Toast.makeText(context, context.getString(R.string.import_error), Toast.LENGTH_SHORT).show()
-                }
-            }
+    val settingsStore = remember { SettingsStore(context) }
+    var pendingMeteredStation by remember { mutableStateOf<RadioStation?>(null) }
+    val onStationItemPlayClick: (RadioStation) -> Unit = { station ->
+        if (settingsStore.warnOnMeteredConnection && isMeteredConnection(context)) {
+            pendingMeteredStation = station
+        } else {
+            onPlayStationWithState(station)
         }
+    }
 
     // Sync current playing station from service (single source of truth: ViewModel)
     LaunchedEffect(playbackService, allStations) {
@@ -584,24 +567,17 @@ fun MainScreen(
                         }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.export_stations)) },
-                                onClick = {
-                                    showMenu = false
-                                    onExportClick()
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.import_stations)) },
-                                onClick = {
-                                    showMenu = false
-                                    importLauncher.launch(arrayOf("application/json"))
-                                },
-                            )
-                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.alarm)) },
                                 onClick = {
                                     showMenu = false
                                     onAlarmClick()
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings)) },
+                                onClick = {
+                                    showMenu = false
+                                    onSettingsClick()
                                 },
                             )
                         }
@@ -697,7 +673,7 @@ fun MainScreen(
                                 isStartError = isStationStartError,
                                 trackTitle = if (isStationPlaying) trackTitle else null,
                                 onPlayClick = {
-                                    if (isStationPlaying) onStopPlayback() else onPlayStationWithState(station)
+                                    if (isStationPlaying) onStopPlayback() else onStationItemPlayClick(station)
                                 },
                                 onFavoriteClick = { viewModel.toggleFavorite(station) },
                                 onEditClick = { onStationEdit(station) },
@@ -713,5 +689,34 @@ fun MainScreen(
                 }
             }
         }
+
+        pendingMeteredStation?.let { station ->
+            AlertDialog(
+                onDismissRequest = { pendingMeteredStation = null },
+                containerColor = card_surface,
+                titleContentColor = text_primary,
+                textContentColor = text_primary,
+                title = { Text(stringResource(R.string.metered_connection_dialog_title)) },
+                text = { Text(stringResource(R.string.metered_connection_dialog_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingMeteredStation = null
+                        onPlayStationWithState(station)
+                    }) {
+                        Text(stringResource(R.string.metered_connection_continue))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingMeteredStation = null }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                },
+            )
+        }
     }
+}
+
+private fun isMeteredConnection(context: Context): Boolean {
+    val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    return connectivityManager.isActiveNetworkMetered
 }

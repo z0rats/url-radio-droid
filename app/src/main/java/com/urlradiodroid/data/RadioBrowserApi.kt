@@ -18,6 +18,14 @@ data class RadioBrowserStation(
     val country: String,
     val tags: String,
     val bitrate: Int,
+    val hls: Boolean = false,
+    val countryCode: String = "",
+    val codec: String = "",
+    val votes: Int = 0,
+    val homepage: String = "",
+    val favicon: String = "",
+    val distanceKm: Double? = null,
+    val sslError: Boolean = false,
 )
 
 /**
@@ -41,6 +49,7 @@ class RadioBrowserApi(
         NAME("name"),
         TAG("tag"),
         COUNTRY("country"),
+        LANGUAGE("language"),
     }
 
     /** Throws [IOException] on network failure; callers are expected to catch and surface it. */
@@ -64,11 +73,104 @@ class RadioBrowserApi(
                 Request
                     .Builder()
                     .url(url)
-                    .header("User-Agent", "URLRadioDroid/2.0 (github.com/z0rats/url-radio-droid)")
+                    .header("User-Agent", USER_AGENT)
                     .build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
                 parseStations(response.body?.string().orEmpty())
+            }
+        }
+
+    /**
+     * Searches for stations near [latitude]/[longitude] (`geo_lat`/`geo_long`), sorted
+     * server-side by proximity (`order=distance`) rather than by client-side computation —
+     * matches [search]'s "let the directory do the ranking" approach. [radiusMeters] uses the
+     * directory's own `geo_distance` filter param, so stations outside it are excluded before
+     * they ever reach this app, not filtered client-side after the fact.
+     */
+    suspend fun searchNearby(
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Int,
+        limit: Int = 30,
+    ): List<RadioBrowserStation> =
+        withContext(Dispatchers.IO) {
+            val url =
+                baseUrl
+                    .newBuilder()
+                    .addPathSegments("json/stations/search")
+                    .addQueryParameter("geo_lat", latitude.toString())
+                    .addQueryParameter("geo_long", longitude.toString())
+                    .addQueryParameter("geo_distance", radiusMeters.toString())
+                    .addQueryParameter("limit", limit.toString())
+                    .addQueryParameter("hidebroken", "true")
+                    .addQueryParameter("order", "distance")
+                    .build()
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .header("User-Agent", USER_AGENT)
+                    .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
+                parseStations(response.body?.string().orEmpty())
+            }
+        }
+
+    /**
+     * Registers a play as a "click" with the directory (`GET /json/url/{uuid}`), which is what
+     * the directory uses to rank stations by popularity server-side — the same `clickcount`
+     * [search] results are already sorted by. Fire-and-forget: swallows network failures
+     * internally since this is best-effort telemetry that must never block or surface as a
+     * broken playback attempt.
+     */
+    suspend fun registerClick(uuid: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val url =
+                    baseUrl
+                        .newBuilder()
+                        .addPathSegments("json/url")
+                        .addPathSegment(uuid)
+                        .build()
+                val request =
+                    Request
+                        .Builder()
+                        .url(url)
+                        .header("User-Agent", USER_AGENT)
+                        .build()
+                client.newCall(request).execute().close()
+            } catch (e: IOException) {
+                // Best-effort telemetry; ignore failures.
+            }
+        }
+    }
+
+    /**
+     * Downloads a station's favicon image bytes (feeds the custom-icon pipeline for Discover-added
+     * stations, [com.urlradiodroid.util.IconStorage.saveImageBytes]), returning null on any
+     * failure — a broken/unreachable/malformed favicon URL should never block adding the station,
+     * just leave it on the auto-generated emoji fallback. [url] is an arbitrary external host (the
+     * station's own site), not this client's [baseUrl], so a malformed value can throw
+     * [IllegalArgumentException] from OkHttp's URL parsing, not just [IOException] — hence the
+     * broad catch.
+     */
+    suspend fun downloadFavicon(url: String): ByteArray? =
+        withContext(Dispatchers.IO) {
+            try {
+                val request =
+                    Request
+                        .Builder()
+                        .url(url)
+                        .header("User-Agent", USER_AGENT)
+                        .build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use null
+                    response.body?.bytes()
+                }
+            } catch (e: Exception) {
+                null
             }
         }
 
@@ -88,6 +190,14 @@ class RadioBrowserApi(
                     country = obj.optString("country"),
                     tags = obj.optString("tags"),
                     bitrate = obj.optInt("bitrate", 0),
+                    hls = obj.optInt("hls", 0) == 1,
+                    countryCode = obj.optString("countrycode"),
+                    codec = obj.optString("codec"),
+                    votes = obj.optInt("votes", 0),
+                    homepage = obj.optString("homepage"),
+                    favicon = obj.optString("favicon"),
+                    distanceKm = if (obj.has("distance")) obj.optDouble("distance") / 1000.0 else null,
+                    sslError = obj.optInt("ssl_error", 0) == 1,
                 ),
             )
         }
@@ -96,5 +206,6 @@ class RadioBrowserApi(
 
     companion object {
         private const val DEFAULT_BASE_URL = "https://all.api.radio-browser.info/"
+        private const val USER_AGENT = "URLRadioDroid/2.0 (github.com/z0rats/url-radio-droid)"
     }
 }

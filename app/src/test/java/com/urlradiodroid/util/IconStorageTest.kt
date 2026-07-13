@@ -13,6 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.io.ByteArrayOutputStream
 import java.io.File
 
 /** Uses native graphics (not the legacy Robolectric shadow) so BitmapFactory decodes real pixel data/dimensions. */
@@ -30,6 +31,17 @@ class IconStorageTest {
         val file = File(context.cacheDir, "source_${width}x$height.png")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         return Uri.fromFile(file)
+    }
+
+    private fun sourceBytesFor(
+        width: Int,
+        height: Int,
+    ): ByteArray {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        return ByteArrayOutputStream().use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            out.toByteArray()
+        }
     }
 
     @Test
@@ -92,6 +104,34 @@ class IconStorageTest {
     @Test
     fun `saveImage returns null for an unresolvable uri`() {
         val path = IconStorage.saveImage(context, Uri.parse("content://nonexistent/authority/1"))
+
+        assertNull(path)
+    }
+
+    @Test
+    fun `saveImageBytes persists downloaded bytes into app-private storage and it decodes back`() {
+        val path = IconStorage.saveImageBytes(context, sourceBytesFor(64, 64))
+
+        assertNotNull(path)
+        assertTrue(IconStorage.isImagePath(path!!))
+        assertTrue(File(path).exists())
+        assertTrue(File(path).parentFile?.name == "station_icons")
+        assertNotNull(IconStorage.decodeBitmap(path))
+    }
+
+    @Test
+    fun `saveImageBytes downscales an oversized image to the max dimension`() {
+        val path = IconStorage.saveImageBytes(context, sourceBytesFor(2048, 1024))
+
+        val decoded = IconStorage.decodeBitmap(path!!)
+        assertNotNull(decoded)
+        assertTrue(decoded!!.width <= 512)
+        assertTrue(decoded.height <= 512)
+    }
+
+    @Test
+    fun `saveImageBytes returns null for garbage bytes instead of throwing`() {
+        val path = IconStorage.saveImageBytes(context, byteArrayOf(1, 2, 3, 4))
 
         assertNull(path)
     }

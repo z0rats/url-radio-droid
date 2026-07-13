@@ -19,4 +19,12 @@ data class RadioStation(
     val customIcon: String? = null, // Emoji string or image file path
     val isFavorite: Boolean = false,
     val genre: String? = null,
+    // Known-HLS hint from the Radio Browser directory's own `hls` flag, filled in for
+    // Discover-added stations only; false for manual adds, which fall back to isHlsUrl()'s
+    // URL heuristic in RadioPlaybackService.
+    val isHls: Boolean = false,
+    // The Radio Browser directory's stationuuid, filled in for Discover-added stations only;
+    // null for manual adds. Lets RadioPlaybackService register a play as a "click" with the
+    // directory (GET /json/url/{uuid}) to contribute to its popularity ranking.
+    val radioBrowserUuid: String? = null,
 )

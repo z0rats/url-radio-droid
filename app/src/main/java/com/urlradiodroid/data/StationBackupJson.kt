@@ -3,7 +3,7 @@ package com.urlradiodroid.data
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Shared `{name, streamUrl, customIcon, isFavorite, genre}` JSON shape used by both bulk and per-station backups. */
+/** Shared `{name, streamUrl, customIcon, isFavorite, genre, isHls, radioBrowserUuid}` JSON shape used by both bulk and per-station backups. */
 object StationBackupJson {
     fun toJsonObject(station: RadioStation): JSONObject =
         JSONObject().apply {
@@ -12,6 +12,8 @@ object StationBackupJson {
             put("customIcon", station.customIcon ?: JSONObject.NULL)
             put("isFavorite", station.isFavorite)
             put("genre", station.genre ?: JSONObject.NULL)
+            put("isHls", station.isHls)
+            put("radioBrowserUuid", station.radioBrowserUuid ?: JSONObject.NULL)
         }
 
     fun toJsonArray(stations: List<RadioStation>): String {

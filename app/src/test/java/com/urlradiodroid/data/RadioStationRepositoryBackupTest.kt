@@ -74,21 +74,26 @@ class RadioStationRepositoryBackupTest {
         }
 
     @Test
-    fun `importStationsFromJson reads isFavorite and genre when present`() =
+    fun `importStationsFromJson reads isFavorite, genre, isHls and radioBrowserUuid when present`() =
         runTest {
             val json =
                 """
-                [{"name": "Rock FM", "streamUrl": "http://example.com/rock", "isFavorite": true, "genre": "rock"}]
+                [{
+                  "name": "Rock FM", "streamUrl": "http://example.com/rock",
+                  "isFavorite": true, "genre": "rock", "isHls": true, "radioBrowserUuid": "uuid-1"
+                }]
                 """.trimIndent()
 
             repository.importStationsFromJson(json)
 
             assertEquals(true, repository.getAllStations()[0].isFavorite)
             assertEquals("rock", repository.getAllStations()[0].genre)
+            assertEquals(true, repository.getAllStations()[0].isHls)
+            assertEquals("uuid-1", repository.getAllStations()[0].radioBrowserUuid)
         }
 
     @Test
-    fun `importStationsFromJson defaults isFavorite to false and genre to null for older backups without the fields`() =
+    fun `importStationsFromJson defaults isFavorite, genre, isHls and radioBrowserUuid for older backups`() =
         runTest {
             val json = """[{"name": "Rock FM", "streamUrl": "http://example.com/rock"}]"""
 
@@ -96,6 +101,8 @@ class RadioStationRepositoryBackupTest {
 
             assertEquals(false, repository.getAllStations()[0].isFavorite)
             assertNull(repository.getAllStations()[0].genre)
+            assertEquals(false, repository.getAllStations()[0].isHls)
+            assertNull(repository.getAllStations()[0].radioBrowserUuid)
         }
 
     @Test

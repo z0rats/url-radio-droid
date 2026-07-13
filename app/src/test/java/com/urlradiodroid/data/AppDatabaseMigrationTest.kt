@@ -108,6 +108,71 @@ internal abstract class LegacyV4Database : RoomDatabase() {
     abstract fun radioStationDao(): LegacyV4RadioStationDao
 }
 
+// A standalone snapshot of the `radio_stations` table as it existed at schema version 5 (adds
+// genre, no isHls column) - see app/schemas/com.urlradiodroid.data.AppDatabase/5.json. Same
+// rationale as the other Legacy* entities: the real RadioStation entity already carries isHls,
+// which would defeat this migration test.
+@Entity(
+    tableName = "radio_stations",
+    indices = [
+        androidx.room.Index(value = ["name"], unique = true),
+        androidx.room.Index(value = ["streamUrl"], unique = true),
+    ],
+)
+internal data class LegacyV5RadioStation(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val streamUrl: String,
+    val customIcon: String? = null,
+    val isFavorite: Boolean = false,
+    val genre: String? = null,
+)
+
+@Dao
+internal interface LegacyV5RadioStationDao {
+    @Insert
+    suspend fun insertStation(station: LegacyV5RadioStation): Long
+}
+
+@Database(entities = [LegacyV5RadioStation::class], version = 5, exportSchema = false)
+internal abstract class LegacyV5Database : RoomDatabase() {
+    abstract fun radioStationDao(): LegacyV5RadioStationDao
+}
+
+// A standalone snapshot of the `radio_stations` table as it existed at schema version 6 (adds
+// isHls, no radioBrowserUuid column) - see app/schemas/com.urlradiodroid.data.AppDatabase/6.json.
+// Same rationale as the other Legacy* entities: the real RadioStation entity already carries
+// radioBrowserUuid, which would defeat this migration test.
+@Entity(
+    tableName = "radio_stations",
+    indices = [
+        androidx.room.Index(value = ["name"], unique = true),
+        androidx.room.Index(value = ["streamUrl"], unique = true),
+    ],
+)
+internal data class LegacyV6RadioStation(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val streamUrl: String,
+    val customIcon: String? = null,
+    val isFavorite: Boolean = false,
+    val genre: String? = null,
+    val isHls: Boolean = false,
+)
+
+@Dao
+internal interface LegacyV6RadioStationDao {
+    @Insert
+    suspend fun insertStation(station: LegacyV6RadioStation): Long
+}
+
+@Database(entities = [LegacyV6RadioStation::class], version = 6, exportSchema = false)
+internal abstract class LegacyV6Database : RoomDatabase() {
+    abstract fun radioStationDao(): LegacyV6RadioStationDao
+}
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29])
 class AppDatabaseMigrationTest {
@@ -144,12 +209,17 @@ class AppDatabaseMigrationTest {
             // Reopen the same file through the real AppDatabase + migrations, deliberately without
             // fallbackToDestructiveMigration, so Room strictly validates the post-migration schema
             // against what AppDatabase actually expects - if a migration is wrong, this throws.
-            // All three migrations must be registered since AppDatabase is now on version 5.
+            // All migrations must be registered since AppDatabase is now on version 7.
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
-                    .addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
-                    .allowMainThreadQueries()
+                    .addMigrations(
+                        AppDatabase.MIGRATION_2_3,
+                        AppDatabase.MIGRATION_3_4,
+                        AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6,
+                        AppDatabase.MIGRATION_6_7,
+                    ).allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
 
@@ -192,8 +262,12 @@ class AppDatabaseMigrationTest {
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
-                    .addMigrations(AppDatabase.MIGRATION_3_4, AppDatabase.MIGRATION_4_5)
-                    .allowMainThreadQueries()
+                    .addMigrations(
+                        AppDatabase.MIGRATION_3_4,
+                        AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6,
+                        AppDatabase.MIGRATION_6_7,
+                    ).allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
 
@@ -224,7 +298,7 @@ class AppDatabaseMigrationTest {
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
-                    .addMigrations(AppDatabase.MIGRATION_4_5)
+                    .addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
                     .allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
@@ -236,6 +310,73 @@ class AppDatabaseMigrationTest {
 
             migratedDb.radioStationDao().updateStation(stations[0].copy(genre = "Rock"))
             assertEquals("Rock", migratedDb.radioStationDao().getStationById(stations[0].id)?.genre)
+
+            migratedDb.close()
+        }
+
+    @Test
+    fun `migration 5 to 6 adds isHls defaulting to false and preserves existing data`() =
+        runTest {
+            val legacyDb =
+                Room
+                    .databaseBuilder(context, LegacyV5Database::class.java, dbName)
+                    .allowMainThreadQueries()
+                    .build()
+            legacyDb.radioStationDao().insertStation(
+                LegacyV5RadioStation(name = "Rock FM", streamUrl = "http://example.com/rock", genre = "Rock"),
+            )
+            legacyDb.close()
+
+            val migratedDb =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, dbName)
+                    .addMigrations(AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
+                    .allowMainThreadQueries()
+                    .build()
+            val stations = migratedDb.radioStationDao().getAllStations()
+
+            assertEquals(1, stations.size)
+            assertEquals("Rock FM", stations[0].name)
+            assertEquals("Rock", stations[0].genre)
+            assertFalse(stations[0].isHls)
+
+            migratedDb.radioStationDao().updateStation(stations[0].copy(isHls = true))
+            assertTrue(migratedDb.radioStationDao().getStationById(stations[0].id)?.isHls == true)
+
+            migratedDb.close()
+        }
+
+    @Test
+    fun `migration 6 to 7 adds a nullable radioBrowserUuid and preserves existing data`() =
+        runTest {
+            val legacyDb =
+                Room
+                    .databaseBuilder(context, LegacyV6Database::class.java, dbName)
+                    .allowMainThreadQueries()
+                    .build()
+            legacyDb.radioStationDao().insertStation(
+                LegacyV6RadioStation(name = "Rock FM", streamUrl = "http://example.com/rock", isHls = true),
+            )
+            legacyDb.close()
+
+            val migratedDb =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, dbName)
+                    .addMigrations(AppDatabase.MIGRATION_6_7)
+                    .allowMainThreadQueries()
+                    .build()
+            val stations = migratedDb.radioStationDao().getAllStations()
+
+            assertEquals(1, stations.size)
+            assertEquals("Rock FM", stations[0].name)
+            assertTrue(stations[0].isHls)
+            assertEquals(null, stations[0].radioBrowserUuid)
+
+            migratedDb.radioStationDao().updateStation(stations[0].copy(radioBrowserUuid = "uuid-1"))
+            assertEquals(
+                "uuid-1",
+                migratedDb.radioStationDao().getStationById(stations[0].id)?.radioBrowserUuid,
+            )
 
             migratedDb.close()
         }

@@ -33,6 +33,20 @@ class RadioPlaybackServiceLogicTest {
     }
 
     @Test
+    fun `isHlsUrl prefers the known-hls hint over the url heuristic`() {
+        // Directory-confirmed HLS on a URL that doesn't look like it.
+        assertTrue(service.isHlsUrl("https://example.com/stream.mp3", knownHls = true))
+        // Directory-confirmed non-HLS, even on a URL that would otherwise match the heuristic.
+        assertFalse(service.isHlsUrl("https://example.com/stream.m3u8", knownHls = false))
+    }
+
+    @Test
+    fun `isHlsUrl falls back to the url heuristic when the hint is unknown`() {
+        assertTrue(service.isHlsUrl("https://example.com/stream.m3u8", knownHls = null))
+        assertFalse(service.isHlsUrl("https://example.com/stream.mp3", knownHls = null))
+    }
+
+    @Test
     fun `retryDelayMs doubles per attempt and caps at 30s`() {
         assertEquals(2_000L, service.retryDelayMs(1))
         assertEquals(4_000L, service.retryDelayMs(2))

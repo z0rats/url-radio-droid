@@ -3,7 +3,6 @@ package com.urlradiodroid.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.urlradiodroid.data.ImportResult
 import com.urlradiodroid.data.RadioStation
 import com.urlradiodroid.data.RadioStationRepository
 import kotlinx.coroutines.channels.Channel
@@ -92,16 +91,6 @@ class MainViewModel(
             repository.setFavorite(station.id, !station.isFavorite)
             loadStations()
         }
-    }
-
-    /** Plain suspend function (not launched internally) so callers get the JSON back to write to a file. */
-    suspend fun exportStationsJson(): String = repository.exportStationsToJson()
-
-    /** Plain suspend function so callers get the [ImportResult] back to show to the user. */
-    suspend fun importStationsJson(json: String): ImportResult {
-        val result = repository.importStationsFromJson(json)
-        loadStations()
-        return result
     }
 
     companion object {

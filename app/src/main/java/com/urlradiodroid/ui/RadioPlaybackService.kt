@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.urlradiodroid.R
+import com.urlradiodroid.data.RadioBrowserApi
 import com.urlradiodroid.data.RadioStation
 import com.urlradiodroid.data.RadioStationRepository
 import com.urlradiodroid.ui.playback.PlaybackStateStore
@@ -78,6 +79,7 @@ class RadioPlaybackService : MediaLibraryService() {
     private lateinit var timeshift: TimeshiftController
     private lateinit var playbackStateStore: PlaybackStateStore
     private lateinit var repository: RadioStationRepository
+    private val radioBrowserApi = RadioBrowserApi()
 
     /** Refreshed on every browse request; lets [MediaLibrarySessionCallback] resolve a tapped station without a DB hit. */
     private var cachedStations: List<RadioStation> = emptyList()
@@ -86,6 +88,9 @@ class RadioPlaybackService : MediaLibraryService() {
 
     /** Current stream URL; kept so we can restart playback when network is restored. */
     private var currentStreamUrl: String? = null
+
+    /** The known-HLS hint for [currentStreamUrl], reused so a network-loss retry doesn't lose it. */
+    private var currentKnownHls: Boolean? = null
 
     /** True when playback failed due to network; we retry when network is back (e.g. VPN reconnect). */
     private var pendingRetry = false
@@ -185,7 +190,16 @@ class RadioPlaybackService : MediaLibraryService() {
 
         if (streamUrl != null) {
             stationName = intent.getStringExtra(EXTRA_STATION_NAME)
-            startPlayback(streamUrl)
+            // The caller only ever passes name/URL strings (Activities, widget, alarm, shortcuts),
+            // never the full RadioStation, so the known-HLS hint and Radio Browser uuid are looked
+            // up here by URL instead of threading them through every intent-creation call site.
+            serviceScope.launch {
+                val station = repository.getStationByUrl(streamUrl)
+                startPlayback(streamUrl, knownHls = station?.isHls)
+                // A genuine new play (as opposed to the process-restart resume branch below):
+                // register it as a "click" with the directory if this station came from Discover.
+                station?.radioBrowserUuid?.let { uuid -> radioBrowserApi.registerClick(uuid) }
+            }
         } else {
             // Null intent means the system killed and restarted this service (START_STICKY);
             // resume whatever was last playing instead of just stopping silently.
@@ -193,7 +207,10 @@ class RadioPlaybackService : MediaLibraryService() {
             if (saved != null) {
                 Log.d(TAG, "onStartCommand: restoring last station after service restart")
                 stationName = saved.stationName
-                startPlayback(saved.streamUrl)
+                serviceScope.launch {
+                    val knownHls = repository.getStationByUrl(saved.streamUrl)?.isHls
+                    startPlayback(saved.streamUrl, knownHls = knownHls)
+                }
             } else {
                 stopSelf()
             }
@@ -445,9 +462,10 @@ class RadioPlaybackService : MediaLibraryService() {
     private fun startPlayback(
         streamUrl: String,
         isRetry: Boolean = false,
+        knownHls: Boolean? = null,
     ) {
         buildMediaSession(streamUrl)
-        applyPlayback(streamUrl, isRetry)
+        applyPlayback(streamUrl, isRetry, knownHls)
     }
 
     /**
@@ -455,15 +473,20 @@ class RadioPlaybackService : MediaLibraryService() {
      * from [startPlayback] so [MediaLibrarySessionCallback.onAddMediaItems] (Android Auto tapping a
      * station in the browse tree) can start playback without rebuilding the session it's currently
      * being called from — see [buildMediaSession]'s doc for why that matters. [stationName] must
-     * already be set by the caller before calling this.
+     * already be set by the caller before calling this. [knownHls] is the directory's own `hls`
+     * flag for this station when known (Discover-added stations, or Android Auto's cached list);
+     * null falls back to [isHlsUrl]'s URL heuristic.
      */
     private fun applyPlayback(
         streamUrl: String,
         isRetry: Boolean = false,
+        knownHls: Boolean? = null,
     ) {
         val exoPlayer = player ?: return
-        Log.d(TAG, "applyPlayback: isHls=${isHlsUrl(streamUrl)}, url=${streamUrl.take(60)}, isRetry=$isRetry")
+        val isHls = isHlsUrl(streamUrl, knownHls)
+        Log.d(TAG, "applyPlayback: isHls=$isHls, url=${streamUrl.take(60)}, isRetry=$isRetry")
         currentStreamUrl = streamUrl
+        currentKnownHls = knownHls
         pendingRetry = false
         playbackStateStore.save(stationName, streamUrl)
         if (!isRetry) {
@@ -475,7 +498,6 @@ class RadioPlaybackService : MediaLibraryService() {
         // Start foreground immediately so notification and lock screen controls appear right away
         startForegroundWithNotification(createConnectingNotification())
 
-        val isHls = isHlsUrl(streamUrl)
         val mediaItemBuilder =
             MediaItem
                 .Builder()
@@ -605,7 +627,7 @@ class RadioPlaybackService : MediaLibraryService() {
             "tryResumePlaybackAfterNetworkRestored: state=${p.playbackState}, " +
                 "restarting playback ($retryCount/$MAX_RETRY_COUNT)",
         )
-        startPlayback(url, isRetry = true)
+        startPlayback(url, isRetry = true, knownHls = currentKnownHls)
     }
 
     /** Exponential backoff (2s, 4s, 8s, 16s, capped at 30s) for the given 1-based retry attempt. */
@@ -622,11 +644,16 @@ class RadioPlaybackService : MediaLibraryService() {
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    internal fun isHlsUrl(url: String): Boolean = url.contains("m3u8", ignoreCase = true)
+    /** [knownHls] (the directory's own `hls` flag, when known) takes precedence over the URL heuristic. */
+    internal fun isHlsUrl(
+        url: String,
+        knownHls: Boolean? = null,
+    ): Boolean = knownHls ?: url.contains("m3u8", ignoreCase = true)
 
     fun stopPlayback() {
         cancelSleepTimer()
         currentStreamUrl = null
+        currentKnownHls = null
         pendingRetry = false
         playbackStateStore.clear()
         unregisterNetworkCallback()
@@ -723,7 +750,7 @@ class RadioPlaybackService : MediaLibraryService() {
     /** Only retries if nothing else (manual stop/switch, or a network-triggered retry) already handled it. */
     private fun retryPlaybackIfPending(streamUrl: String) {
         if (!pendingRetry || currentStreamUrl != streamUrl) return
-        startPlayback(streamUrl, isRetry = true)
+        startPlayback(streamUrl, isRetry = true, knownHls = currentKnownHls)
     }
 
     private fun releasePlayer() {
@@ -798,7 +825,8 @@ class RadioPlaybackService : MediaLibraryService() {
     internal fun playFromBrowseTree(mediaId: String): Boolean {
         val station = cachedStations.find { it.streamUrl == mediaId } ?: return false
         stationName = station.name
-        applyPlayback(station.streamUrl)
+        applyPlayback(station.streamUrl, knownHls = station.isHls)
+        station.radioBrowserUuid?.let { uuid -> serviceScope.launch { radioBrowserApi.registerClick(uuid) } }
         return true
     }
 
