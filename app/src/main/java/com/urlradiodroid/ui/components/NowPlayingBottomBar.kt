@@ -40,9 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -60,8 +58,6 @@ import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.text_hint
 import com.urlradiodroid.ui.theme.text_primary
-import com.urlradiodroid.util.EmojiGenerator
-import com.urlradiodroid.util.IconStorage
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -243,32 +239,6 @@ private fun MiniPlayerCardPreview(station: RadioStation) {
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(card_surface_active),
-                contentAlignment = Alignment.Center,
-            ) {
-                val iconBitmap = rememberStationIconBitmap(station.customIcon)
-                if (iconBitmap != null) {
-                    Image(
-                        bitmap = iconBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text =
-                            station.customIcon?.takeUnless(IconStorage::isImagePath)
-                                ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(Spacing.xs),
-                    )
-                }
-            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -322,33 +292,6 @@ private fun MiniPlayerCardFull(
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(card_surface_active),
-                contentAlignment = Alignment.Center,
-            ) {
-                val iconBitmap = rememberStationIconBitmap(station.customIcon)
-                if (iconBitmap != null) {
-                    Image(
-                        bitmap = iconBitmap.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    Text(
-                        text =
-                            station.customIcon?.takeUnless(IconStorage::isImagePath)
-                                ?: EmojiGenerator.getEmojiForStation(station.name, station.streamUrl),
-                        style = MaterialTheme.typography.headlineMedium,
-                        modifier = Modifier.padding(Spacing.xs),
-                    )
-                }
-            }
-
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,

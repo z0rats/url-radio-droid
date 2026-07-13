@@ -53,10 +53,12 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,6 +69,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioBrowserStation
@@ -131,6 +136,26 @@ fun DiscoverStationsScreen(
         } else {
             showLocationRationale = true
         }
+    }
+
+    // Location services (GPS) being off isn't something this screen can observe directly — the
+    // user has to leave to the system settings to turn it on. Retrying on every resume (e.g.
+    // switching back from Settings, or just from the app switcher) means they don't have to
+    // manually re-tap the Nearby chip afterwards for it to notice.
+    val currentUiState = rememberUpdatedState(uiState)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME &&
+                    currentUiState.value.mode == DiscoverSearchMode.NEARBY &&
+                    currentUiState.value.errorRes == R.string.discover_location_unavailable
+                ) {
+                    requestNearbySearch()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     if (showLocationRationale) {

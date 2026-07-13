@@ -47,6 +47,7 @@ import com.urlradiodroid.ui.theme.URLRadioDroidTheme
 import com.urlradiodroid.ui.theme.background_gradient_end
 import com.urlradiodroid.ui.theme.background_gradient_mid
 import com.urlradiodroid.ui.theme.background_gradient_start
+import com.urlradiodroid.ui.theme.card_border
 import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.text_hint
@@ -165,7 +166,14 @@ fun SettingsScreen(
                             warnOnMeteredConnection = it
                             settingsStore.warnOnMeteredConnection = it
                         },
-                        colors = SwitchDefaults.colors(checkedThumbColor = glass_accent),
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = text_primary,
+                                checkedTrackColor = glass_accent,
+                                uncheckedThumbColor = text_hint,
+                                uncheckedTrackColor = card_surface,
+                                uncheckedBorderColor = card_border,
+                            ),
                     )
                 }
             }

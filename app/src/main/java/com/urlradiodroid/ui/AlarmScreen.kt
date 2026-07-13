@@ -150,7 +150,14 @@ fun AlarmScreen(
                         checked = enabled,
                         onCheckedChange = { enabled = it },
                         enabled = stations.isNotEmpty(),
-                        colors = SwitchDefaults.colors(checkedThumbColor = glass_accent),
+                        colors =
+                            SwitchDefaults.colors(
+                                checkedThumbColor = text_primary,
+                                checkedTrackColor = glass_accent,
+                                uncheckedThumbColor = text_hint,
+                                uncheckedTrackColor = card_surface,
+                                uncheckedBorderColor = card_border,
+                            ),
                     )
                 }
             }
