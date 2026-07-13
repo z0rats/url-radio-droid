@@ -18,6 +18,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -421,7 +422,8 @@ fun PlaybackScreen(
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = text_primary.copy(alpha = 0.8f),
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.weight(1f, fill = false),
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f, fill = false).basicMarquee(),
                                 )
                                 IconButton(
                                     onClick = {

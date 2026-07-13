@@ -4,11 +4,9 @@
 
 - ~~**Localization (i18n)**~~ — done: Russian, Spanish and Simplified Chinese added (`res/values-ru/`, `res/values-es/`, `res/values-zh-rCN/`). Adding another language is just a new `values-<lang>/strings.xml` with the same keys — see CLAUDE.md's Localization section for the process to keep them in sync going forward.
 - **Multiple wake-up alarms** — `AlarmScreen`/`AlarmStateStore` deliberately support only a single daily alarm today (see CLAUDE.md). Moving to a list would mean an `AlarmStateStore` → Room table migration plus a list UI instead of one form.
-- ~~**"Near me" station search**~~ — done: `DiscoverSearchMode.NEARBY` (`RadioBrowserApi.searchNearby()`, `util/LocationProvider`), gated behind `ACCESS_COARSE_LOCATION` with an in-app rationale dialog before the system permission prompt. See CLAUDE.md's Station discovery section.
 
 ## Usability
 
-- ~~**Warn on stations with SSL cert issues**~~ — done: `RadioBrowserStation.sslError` (parsed from the directory's `ssl_error` field) shows a non-blocking warning icon on `DiscoverResultCard`. See CLAUDE.md's Station discovery section.
 
 ## Technical
 

@@ -13,6 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -209,6 +210,17 @@ fun DiscoverStationsScreen(
                         onClick = { viewModel.onModeChange(DiscoverSearchMode.NAME) },
                     )
                     SearchModeChip(
+                        label = stringResource(R.string.discover_search_mode_nearby),
+                        selected = uiState.mode == DiscoverSearchMode.NEARBY,
+                        icon = Icons.Default.LocationOn,
+                        onClick = {
+                            if (uiState.mode != DiscoverSearchMode.NEARBY) {
+                                viewModel.onModeChange(DiscoverSearchMode.NEARBY)
+                            }
+                            requestNearbySearch()
+                        },
+                    )
+                    SearchModeChip(
                         label = stringResource(R.string.discover_search_mode_genre),
                         selected = uiState.mode == DiscoverSearchMode.GENRE,
                         onClick = { viewModel.onModeChange(DiscoverSearchMode.GENRE) },
@@ -222,17 +234,6 @@ fun DiscoverStationsScreen(
                         label = stringResource(R.string.discover_search_mode_language),
                         selected = uiState.mode == DiscoverSearchMode.LANGUAGE,
                         onClick = { viewModel.onModeChange(DiscoverSearchMode.LANGUAGE) },
-                    )
-                    SearchModeChip(
-                        label = stringResource(R.string.discover_search_mode_nearby),
-                        selected = uiState.mode == DiscoverSearchMode.NEARBY,
-                        icon = Icons.Default.LocationOn,
-                        onClick = {
-                            if (uiState.mode != DiscoverSearchMode.NEARBY) {
-                                viewModel.onModeChange(DiscoverSearchMode.NEARBY)
-                            }
-                            requestNearbySearch()
-                        },
                     )
                 }
 
@@ -407,8 +408,8 @@ private fun DiscoverResultCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.sm, vertical = Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -426,7 +427,7 @@ private fun DiscoverResultCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = text_primary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.basicMarquee(),
                 )
                 Text(
                     text = stationSubtitle(station),
@@ -504,11 +505,7 @@ private fun openWebsite(
 private fun stationSubtitle(station: RadioBrowserStation): String {
     val distancePart =
         station.distanceKm?.let { km -> "📍 " + String.format(Locale.getDefault(), "%.1f km", km) }
-    val countryPart =
-        station.country.takeIf { it.isNotBlank() }?.let { country ->
-            val flag = CountryFlagEmoji.from(station.countryCode)
-            if (flag != null) "$flag $country" else country
-        }
+    val countryPart = CountryFlagEmoji.from(station.countryCode)
     val bitratePart =
         listOfNotNull(
             station.bitrate.takeIf { it > 0 }?.let { "$it kbps" },

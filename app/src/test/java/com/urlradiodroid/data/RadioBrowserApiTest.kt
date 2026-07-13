@@ -157,6 +157,17 @@ class RadioBrowserApiTest {
         }
 
     @Test
+    fun `search sorts by votes, matching the star badge shown in results`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("[]"))
+
+            api.search("jazz", RadioBrowserApi.SearchBy.TAG)
+
+            val request = server.takeRequest()
+            assertTrue(request.path?.contains("order=votes") == true)
+        }
+
+    @Test
     fun `search sends a language query under the language param`() =
         runTest {
             server.enqueue(MockResponse().setBody("[]"))

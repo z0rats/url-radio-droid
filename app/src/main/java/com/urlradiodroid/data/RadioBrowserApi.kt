@@ -52,7 +52,12 @@ class RadioBrowserApi(
         LANGUAGE("language"),
     }
 
-    /** Throws [IOException] on network failure; callers are expected to catch and surface it. */
+    /**
+     * Throws [IOException] on network failure; callers are expected to catch and surface it.
+     * Sorted by `votes` (the directory's community upvote count — the same number shown as the
+     * star badge on each result), not `clickcount`, so the visible ranking matches what the badge
+     * implies.
+     */
     suspend fun search(
         query: String,
         searchBy: SearchBy,
@@ -66,7 +71,7 @@ class RadioBrowserApi(
                     .addQueryParameter(searchBy.param, query)
                     .addQueryParameter("limit", limit.toString())
                     .addQueryParameter("hidebroken", "true")
-                    .addQueryParameter("order", "clickcount")
+                    .addQueryParameter("order", "votes")
                     .addQueryParameter("reverse", "true")
                     .build()
             val request =
@@ -120,10 +125,10 @@ class RadioBrowserApi(
 
     /**
      * Registers a play as a "click" with the directory (`GET /json/url/{uuid}`), which is what
-     * the directory uses to rank stations by popularity server-side — the same `clickcount`
-     * [search] results are already sorted by. Fire-and-forget: swallows network failures
-     * internally since this is best-effort telemetry that must never block or surface as a
-     * broken playback attempt.
+     * the directory uses to track its own `clickcount` popularity metric — a separate number from
+     * the `votes` [search] results are sorted by, but still worth contributing to since other
+     * clients may sort/filter by it. Fire-and-forget: swallows network failures internally since
+     * this is best-effort telemetry that must never block or surface as a broken playback attempt.
      */
     suspend fun registerClick(uuid: String) {
         withContext(Dispatchers.IO) {
