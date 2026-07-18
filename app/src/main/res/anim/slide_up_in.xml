@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PlaybackActivity's enter transition: slides up from the bottom of the screen with a
+     matching fade-in, giving the impression the mini player is expanding into the full-screen
+     player rather than a plain activity swap. Paired with stay.xml (the activity underneath). -->
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromYDelta="100%"
+        android:toYDelta="0%"
+        android:duration="300"
+        android:interpolator="@android:anim/decelerate_interpolator" />
+    <alpha
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0"
+        android:duration="200"
+        android:interpolator="@android:anim/decelerate_interpolator" />
+</set>

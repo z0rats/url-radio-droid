@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.urlradiodroid.R
@@ -79,6 +80,7 @@ import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
 import com.urlradiodroid.ui.theme.glass_primary
+import com.urlradiodroid.ui.theme.isLandscape
 import com.urlradiodroid.ui.theme.text_hint
 import com.urlradiodroid.ui.theme.text_primary
 import com.urlradiodroid.util.EmojiGenerator
@@ -252,6 +254,16 @@ class PlaybackActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    // Mirrors the slide-up entrance MainScreen's onNowPlayingClick sets up (see there): slides
+    // this activity back down out of view on any close path — the composable back arrow's
+    // onBackClick, the system back gesture/button, or a programmatic finish() — since they all
+    // funnel through this one override.
+    override fun finish() {
+        super.finish()
+        @Suppress("DEPRECATION")
+        overridePendingTransition(R.anim.stay, R.anim.slide_down_out)
+    }
+
     private fun togglePlayback() {
         if (!isNetworkAvailable()) {
             Toast.makeText(this, getString(R.string.error_network), Toast.LENGTH_SHORT).show()
@@ -300,6 +312,63 @@ fun PlaybackScreen(
     onBackClick: () -> Unit,
     onPlayStopClick: () -> Unit,
 ) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    brush =
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    background_gradient_start,
+                                    background_gradient_mid,
+                                    background_gradient_end,
+                                ),
+                        ),
+                ),
+    ) {
+        Scaffold(
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stationName ?: stringResource(R.string.unknown_station)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                            )
+                        }
+                    },
+                    colors =
+                        androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                        ),
+                )
+            },
+        ) { paddingValues ->
+            NowPlayingContent(
+                stationName = stationName,
+                streamUrl = streamUrl,
+                playbackService = playbackService,
+                onPlayStopClick = onPlayStopClick,
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+            )
+        }
+    }
+}
+
+// Shared by PlaybackScreen (phone-sized full-screen, wrapped in the Scaffold/TopAppBar above) and
+// MainScreen's wide-screen two-pane detail slot (embedded directly, no back button of its own).
+@Composable
+fun NowPlayingContent(
+    stationName: String?,
+    streamUrl: String?,
+    playbackService: RadioPlaybackService?,
+    onPlayStopClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val displayName = stationName ?: stringResource(R.string.unknown_station)
     var isPlaying by remember { mutableStateOf(playbackService?.isPlaying() ?: false) }
@@ -333,233 +402,267 @@ fun PlaybackScreen(
         }
     }
 
-    Box(
+    Column(
         modifier =
-            Modifier
-                .fillMaxSize()
-                .background(
-                    brush =
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    background_gradient_start,
-                                    background_gradient_mid,
-                                    background_gradient_end,
-                                ),
-                        ),
-                ),
+            modifier
+                .verticalScroll(rememberScrollState())
+                .padding(Spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Scaffold(
-            containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = { Text(displayName) },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                            )
-                        }
-                    },
-                    colors =
-                        androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
-                        ),
-                )
-            },
-        ) { paddingValues ->
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .verticalScroll(rememberScrollState())
-                        .padding(Spacing.lg),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Card(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .widthIn(max = 520.dp)
-                            .border(width = 1.dp, color = card_border, shape = MaterialTheme.shapes.large),
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor = glass_primary,
-                        ),
-                    shape = MaterialTheme.shapes.large,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        val landscape = isLandscape()
+        val emoji = EmojiGenerator.getEmojiForStation(displayName, streamUrl ?: "")
+        Card(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = if (landscape) 760.dp else 520.dp)
+                    .border(width = 1.dp, color = card_border, shape = MaterialTheme.shapes.large),
+            colors =
+                CardDefaults.cardColors(
+                    containerColor = glass_primary,
+                ),
+            shape = MaterialTheme.shapes.large,
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        ) {
+            // Landscape mirrors the "art pane + controls pane" layout of Spotify/Apple
+            // Music's now-playing screen: side-by-side instead of stacked, so nothing
+            // needs scrolling on a phone's limited landscape height.
+            if (landscape) {
+                Row(
+                    modifier = Modifier.padding(Spacing.lg),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(
-                        modifier = Modifier.padding(Spacing.lg),
+                        modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement =
-                            androidx.compose.foundation.layout.Arrangement
-                                .spacedBy(Spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                     ) {
-                        Text(
-                            text = EmojiGenerator.getEmojiForStation(displayName, streamUrl ?: ""),
-                            style = MaterialTheme.typography.displayMedium,
-                            modifier = Modifier.size(64.dp),
-                        )
-
+                        StationIcon(emoji = emoji, size = 88.dp)
                         Text(
                             text = displayName,
-                            style = MaterialTheme.typography.headlineMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             color = text_primary,
                             textAlign = TextAlign.Center,
+                            maxLines = 2,
                         )
-
-                        if (isPlaying && trackTitle != null) {
-                            val clipboardManager = LocalClipboardManager.current
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = trackTitle ?: "",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = text_primary.copy(alpha = 0.8f),
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 1,
-                                    modifier = Modifier.weight(1f, fill = false).basicMarquee(),
-                                )
-                                IconButton(
-                                    onClick = {
-                                        clipboardManager.setText(AnnotatedString(trackTitle ?: ""))
-                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    context.getString(R.string.track_title_copied),
-                                                    Toast.LENGTH_SHORT,
-                                                ).show()
-                                        }
-                                    },
-                                    modifier = Modifier.size(32.dp),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = stringResource(R.string.copy_track_title),
-                                        modifier = Modifier.size(16.dp),
-                                        tint = text_hint,
-                                    )
-                                }
-                            }
-                        }
-
-                        Button(
-                            onClick = onPlayStopClick,
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(72.dp),
-                            shape = MaterialTheme.shapes.medium,
-                        ) {
-                            Text(
-                                text =
-                                    if (isPlaying) {
-                                        stringResource(R.string.stop)
-                                    } else {
-                                        stringResource(R.string.play)
-                                    },
-                            )
-                        }
-
-                        var sleepTimerDialogOpen by remember { mutableStateOf(false) }
-                        val sleepTimerActive = sleepTimerRemainingMs != null
-                        Row(
-                            modifier =
-                                Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(
-                                        if (sleepTimerActive) glass_accent.copy(alpha = 0.22f) else card_surface_active,
-                                    ).clickable { sleepTimerDialogOpen = true }
-                                    .padding(horizontal = Spacing.md, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Bedtime,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = if (sleepTimerActive) glass_accent else text_hint,
-                            )
-                            Text(
-                                text =
-                                    sleepTimerRemainingMs?.let { ms ->
-                                        val totalSeconds = (ms / 1000).toInt()
-                                        stringResource(
-                                            R.string.sleep_timer_active,
-                                            totalSeconds / 60,
-                                            totalSeconds % 60,
-                                        )
-                                    } ?: stringResource(R.string.sleep_timer),
-                                color = if (sleepTimerActive) glass_accent else text_hint,
-                            )
-                        }
-
-                        if (sleepTimerDialogOpen) {
-                            AlertDialog(
-                                onDismissRequest = { sleepTimerDialogOpen = false },
-                                containerColor = card_surface,
-                                titleContentColor = text_primary,
-                                textContentColor = text_primary,
-                                title = { Text(stringResource(R.string.sleep_timer)) },
-                                text = {
-                                    Column {
-                                        listOf(0, 15, 30, 45, 60).forEach { minutes ->
-                                            Text(
-                                                text =
-                                                    if (minutes == 0) {
-                                                        stringResource(R.string.sleep_timer_off)
-                                                    } else {
-                                                        stringResource(R.string.sleep_timer_minutes, minutes)
-                                                    },
-                                                color = text_primary,
-                                                modifier =
-                                                    Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable {
-                                                            if (minutes == 0) {
-                                                                playbackService?.cancelSleepTimer()
-                                                                Toast
-                                                                    .makeText(
-                                                                        context,
-                                                                        context.getString(
-                                                                            R.string.sleep_timer_cancelled_toast,
-                                                                        ),
-                                                                        Toast.LENGTH_SHORT,
-                                                                    ).show()
-                                                            } else {
-                                                                playbackService?.setSleepTimer(minutes)
-                                                                Toast
-                                                                    .makeText(
-                                                                        context,
-                                                                        context.getString(
-                                                                            R.string.sleep_timer_set_toast,
-                                                                            minutes,
-                                                                        ),
-                                                                        Toast.LENGTH_SHORT,
-                                                                    ).show()
-                                                            }
-                                                            sleepTimerDialogOpen = false
-                                                        }.padding(vertical = 12.dp),
-                                            )
-                                        }
-                                    }
-                                },
-                                confirmButton = {
-                                    TextButton(onClick = { sleepTimerDialogOpen = false }) {
-                                        Text(stringResource(R.string.close))
-                                    }
-                                },
-                            )
-                        }
                     }
+                    Column(
+                        modifier = Modifier.weight(1.2f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                    ) {
+                        if (isPlaying && trackTitle != null) {
+                            TrackTitleRow(trackTitle = trackTitle ?: "", context = context)
+                        }
+                        PlayStopButton(isPlaying = isPlaying, onClick = onPlayStopClick, height = 64.dp)
+                        SleepTimerControl(
+                            sleepTimerRemainingMs = sleepTimerRemainingMs,
+                            playbackService = playbackService,
+                            context = context,
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier.padding(Spacing.lg),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    StationIcon(emoji = emoji, size = 64.dp)
+
+                    Text(
+                        text = displayName,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = text_primary,
+                        textAlign = TextAlign.Center,
+                    )
+
+                    if (isPlaying && trackTitle != null) {
+                        TrackTitleRow(trackTitle = trackTitle ?: "", context = context)
+                    }
+
+                    PlayStopButton(isPlaying = isPlaying, onClick = onPlayStopClick, height = 72.dp)
+
+                    SleepTimerControl(
+                        sleepTimerRemainingMs = sleepTimerRemainingMs,
+                        playbackService = playbackService,
+                        context = context,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StationIcon(
+    emoji: String,
+    size: Dp,
+) {
+    Text(
+        text = emoji,
+        style = MaterialTheme.typography.displayMedium,
+        modifier = Modifier.size(size),
+    )
+}
+
+@Composable
+private fun TrackTitleRow(
+    trackTitle: String,
+    context: Context,
+) {
+    val clipboardManager = LocalClipboardManager.current
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = trackTitle,
+            style = MaterialTheme.typography.bodyLarge,
+            color = text_primary.copy(alpha = 0.8f),
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            modifier = Modifier.weight(1f, fill = false).basicMarquee(),
+        )
+        IconButton(
+            onClick = {
+                clipboardManager.setText(AnnotatedString(trackTitle))
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    Toast
+                        .makeText(
+                            context,
+                            context.getString(R.string.track_title_copied),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                }
+            },
+            modifier = Modifier.size(32.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.ContentCopy,
+                contentDescription = stringResource(R.string.copy_track_title),
+                modifier = Modifier.size(16.dp),
+                tint = text_hint,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayStopButton(
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    height: Dp,
+) {
+    Button(
+        onClick = onClick,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(height),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Text(
+            text = if (isPlaying) stringResource(R.string.stop) else stringResource(R.string.play),
+        )
+    }
+}
+
+@Composable
+private fun SleepTimerControl(
+    sleepTimerRemainingMs: Long?,
+    playbackService: RadioPlaybackService?,
+    context: Context,
+) {
+    var sleepTimerDialogOpen by remember { mutableStateOf(false) }
+    val sleepTimerActive = sleepTimerRemainingMs != null
+    Row(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    if (sleepTimerActive) glass_accent.copy(alpha = 0.22f) else card_surface_active,
+                ).clickable { sleepTimerDialogOpen = true }
+                .padding(horizontal = Spacing.md, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Bedtime,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = if (sleepTimerActive) glass_accent else text_hint,
+        )
+        Text(
+            text =
+                sleepTimerRemainingMs?.let { ms ->
+                    val totalSeconds = (ms / 1000).toInt()
+                    stringResource(
+                        R.string.sleep_timer_active,
+                        totalSeconds / 60,
+                        totalSeconds % 60,
+                    )
+                } ?: stringResource(R.string.sleep_timer),
+            color = if (sleepTimerActive) glass_accent else text_hint,
+        )
+    }
+
+    if (sleepTimerDialogOpen) {
+        AlertDialog(
+            onDismissRequest = { sleepTimerDialogOpen = false },
+            containerColor = card_surface,
+            titleContentColor = text_primary,
+            textContentColor = text_primary,
+            title = { Text(stringResource(R.string.sleep_timer)) },
+            text = {
+                Column {
+                    listOf(0, 15, 30, 45, 60).forEach { minutes ->
+                        Text(
+                            text =
+                                if (minutes == 0) {
+                                    stringResource(R.string.sleep_timer_off)
+                                } else {
+                                    stringResource(R.string.sleep_timer_minutes, minutes)
+                                },
+                            color = text_primary,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (minutes == 0) {
+                                            playbackService?.cancelSleepTimer()
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    context.getString(
+                                                        R.string.sleep_timer_cancelled_toast,
+                                                    ),
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
+                                        } else {
+                                            playbackService?.setSleepTimer(minutes)
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    context.getString(
+                                                        R.string.sleep_timer_set_toast,
+                                                        minutes,
+                                                    ),
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
+                                        }
+                                        sleepTimerDialogOpen = false
+                                    }.padding(vertical = 12.dp),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { sleepTimerDialogOpen = false }) {
+                    Text(stringResource(R.string.close))
+                }
+            },
+        )
     }
 }

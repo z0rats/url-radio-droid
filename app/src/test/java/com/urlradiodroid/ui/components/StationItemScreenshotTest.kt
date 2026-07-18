@@ -58,7 +58,6 @@ class StationItemScreenshotTest {
                     isActive = false,
                     isPlaying = false,
                     onPlayClick = {},
-                    onFavoriteClick = {},
                     onEditClick = {},
                     onDeleteClick = {},
                     onShareClick = {},
@@ -72,12 +71,29 @@ class StationItemScreenshotTest {
         captureRoboImage {
             PreviewBackground {
                 StationItem(
-                    station = station.copy(isFavorite = true),
+                    station = station,
                     isActive = true,
                     isPlaying = true,
                     trackTitle = "On Air: Track Name",
                     onPlayClick = {},
-                    onFavoriteClick = {},
+                    onEditClick = {},
+                    onDeleteClick = {},
+                    onShareClick = {},
+                )
+            }
+        }
+    }
+
+    @Test
+    fun draggingStationCardShowsAccentBorderAndElevation() {
+        captureRoboImage {
+            PreviewBackground {
+                StationItem(
+                    station = station,
+                    isActive = false,
+                    isPlaying = false,
+                    isDragging = true,
+                    onPlayClick = {},
                     onEditClick = {},
                     onDeleteClick = {},
                     onShareClick = {},

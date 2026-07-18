@@ -24,6 +24,11 @@ class AlarmStateStore(
             .apply()
     }
 
+    /** Wipes the stored alarm — called once [restore]'s data has been imported into Room, see [com.urlradiodroid.data.AlarmRepository.migrateLegacyAlarmIfNeeded]. */
+    fun clear() {
+        prefs.edit().clear().apply()
+    }
+
     /** Null only if an alarm has never been saved; a saved-but-disabled alarm still restores with `enabled = false`. */
     fun restore(): Alarm? {
         if (!prefs.contains(KEY_HOUR)) return null

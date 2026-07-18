@@ -10,6 +10,8 @@
     <string name="stop">Detener</string>
     <string name="volume">Volumen</string>
     <string name="no_stations">No hay emisoras guardadas</string>
+    <string name="no_search_results">Ninguna emisora coincide con tu búsqueda</string>
+    <string name="no_station_selected">Selecciona una emisora para ver qué está sonando</string>
     <string name="error_invalid_url">URL no válida</string>
     <string name="error_network">Error de red</string>
     <string name="error_playback">Error de reproducción</string>
@@ -30,8 +32,7 @@
     <string name="station_deleted">Emisora eliminada</string>
     <string name="undo">Deshacer</string>
     <string name="search_stations">Buscar emisoras</string>
-    <string name="pin_station">Fijar arriba</string>
-    <string name="unpin_station">Desfijar</string>
+    <string name="reorder_station">Arrastra para reordenar</string>
     <string name="station_icon">Icono de la emisora</string>
     <string name="choose_emoji">Elegir emoji</string>
     <string name="upload_image">Subir imagen</string>
@@ -57,7 +58,7 @@
     <string name="share_station">Compartir emisora</string>
     <string name="import_stations">Importar emisoras</string>
     <string name="export_error">Error al exportar</string>
-    <string name="import_error">Error al importar: el archivo no es una copia de seguridad de emisoras válida</string>
+    <string name="import_error">Error al importar: archivo no compatible o no válido (se esperaba una copia de seguridad de emisoras, OPML, M3U o PLS)</string>
     <string name="import_result">Importadas %1$d, omitidos %2$d duplicados</string>
     <string name="copy_track_title">Copiar título de la pista</string>
     <string name="track_title_copied">Título de la pista copiado</string>
@@ -84,8 +85,9 @@
     <string name="discover_ssl_warning">El certificado HTTPS de esta emisora no superó la validación y puede que no se reproduzca de forma fiable</string>
     <string name="visit_website">Visitar sitio web</string>
     <string name="shortcut_last_played">Continuar: %1$s</string>
-    <string name="shortcut_favorite">Favorita: %1$s</string>
-    <string name="alarm">Alarma</string>
+    <string name="shortcut_first_station">Reproducción rápida: %1$s</string>
+    <string name="alarms">Alarmas</string>
+    <string name="alarm_enabled">Activada</string>
     <string name="alarm_time">Hora de despertar</string>
     <string name="alarm_station">Emisora</string>
     <string name="alarm_select_station">Selecciona una emisora</string>
@@ -93,6 +95,12 @@
     <string name="alarm_enabled_toast">Alarma configurada para las %1$s</string>
     <string name="alarm_disabled_toast">Alarma desactivada</string>
     <string name="alarm_permission_needed">Permite \"Alarmas y recordatorios\" para esta app para poder configurar la alarma</string>
+    <string name="alarm_add">Añadir alarma</string>
+    <string name="alarm_delete">Eliminar alarma</string>
+    <string name="alarm_delete_confirm">¿Eliminar esta alarma?</string>
+    <string name="alarm_none">Aún no hay alarmas. Toca + para añadir una.</string>
+    <string name="alarm_new_title">Nueva alarma</string>
+    <string name="alarm_edit_title">Editar alarma</string>
     <string name="settings">Ajustes</string>
     <string name="settings_metered_warning">Aviso de datos móviles</string>
     <string name="settings_metered_warning_description">Pedir confirmación antes de reproducir con una conexión medida</string>

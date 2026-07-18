@@ -159,20 +159,21 @@ class AddStationViewModelTest {
         }
 
     @Test
-    fun `editing a favorited station keeps it favorited after save`() =
+    fun `editing a station keeps its manual list position after save`() =
         runTest {
+            // insertStation() auto-assigns the next sortOrder; add two others first so this one
+            // doesn't land at 0 by coincidence and mask a regression.
+            repository.insertStation(RadioStation(name = "First", streamUrl = "http://example.com/first"))
+            repository.insertStation(RadioStation(name = "Second", streamUrl = "http://example.com/second"))
             val id =
                 repository.insertStation(
-                    RadioStation(
-                        name = "Jazz FM",
-                        streamUrl = server.url("/stream").toString(),
-                        isFavorite = true,
-                    ),
+                    RadioStation(name = "Jazz FM", streamUrl = server.url("/stream").toString()),
                 )
+            val originalSortOrder = repository.getStationById(id)!!.sortOrder
             val viewModel = createViewModel(testScheduler, editingStationId = id)
-            // Wait for init's Room load to populate isFavorite before saving, same reasoning as the
+            // Wait for init's Room load to populate sortOrder before saving, same reasoning as the
             // icon-replacement test above (Room's suspend calls hop off the virtual test scheduler).
-            awaitTrue { viewModel.uiState.value.isFavorite }
+            awaitTrue { viewModel.uiState.value.sortOrder == originalSortOrder }
 
             viewModel.onGenreChange("smooth jazz")
             viewModel.save()
@@ -180,7 +181,7 @@ class AddStationViewModelTest {
             // See the true->false isSaving reasoning in the test above.
             awaitTrue { viewModel.uiState.value.isSaving }
             awaitTrue { !viewModel.uiState.value.isSaving }
-            assertEquals(true, repository.getStationById(id)?.isFavorite)
+            assertEquals(originalSortOrder, repository.getStationById(id)?.sortOrder)
         }
 
     @Test

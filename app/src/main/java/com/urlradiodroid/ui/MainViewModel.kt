@@ -78,18 +78,35 @@ class MainViewModel(
         }
     }
 
-    /** Re-inserts [station] with its original id, restoring its position in the list. */
+    /** Re-inserts [station] with its original id and sortOrder, restoring its position in the list. */
     fun undoDelete(station: RadioStation) {
         viewModelScope.launch {
-            repository.insertStation(station)
+            repository.restoreStation(station)
             loadStations()
         }
     }
 
-    fun toggleFavorite(station: RadioStation) {
+    /**
+     * Moves the station at [fromIndex] to [toIndex] in the in-memory list only — called on every
+     * intermediate step of a drag gesture for instant visual feedback, without a DB write per
+     * frame. [persistStationOrder] commits the final order once the drag ends.
+     */
+    fun moveStation(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        val current = _stations.value
+        if (fromIndex !in current.indices || toIndex !in current.indices) return
+        _stations.value =
+            current.toMutableList().apply {
+                add(toIndex, removeAt(fromIndex))
+            }
+    }
+
+    /** Persists the current in-memory order as each station's new `sortOrder`. */
+    fun persistStationOrder() {
         viewModelScope.launch {
-            repository.setFavorite(station.id, !station.isFavorite)
-            loadStations()
+            repository.updateSortOrder(_stations.value.map { it.id })
         }
     }
 

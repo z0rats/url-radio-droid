@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PlaybackActivity's exit transition (back/finish()): mirrors slide_up_in.xml, sliding and
+     fading it back down out of view. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <translate
+        android:fromYDelta="0%"
+        android:toYDelta="100%"
+        android:duration="300"
+        android:interpolator="@android:anim/accelerate_interpolator" />
+    <alpha
+        android:fromAlpha="1.0"
+        android:toAlpha="0.0"
+        android:duration="250"
+        android:interpolator="@android:anim/accelerate_interpolator" />
+</set>

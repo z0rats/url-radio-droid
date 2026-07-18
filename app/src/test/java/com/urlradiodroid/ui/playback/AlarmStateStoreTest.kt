@@ -58,4 +58,21 @@ class AlarmStateStoreTest {
 
         assertTrue(restored != null && !restored.enabled)
     }
+
+    @Test
+    fun `clear wipes a saved alarm so restore returns null afterward`() {
+        store.save(
+            AlarmStateStore.Alarm(
+                enabled = true,
+                hour = 7,
+                minute = 45,
+                stationName = "Morning FM",
+                streamUrl = "https://stream.example.com/morning",
+            ),
+        )
+
+        store.clear()
+
+        assertNull(store.restore())
+    }
 }

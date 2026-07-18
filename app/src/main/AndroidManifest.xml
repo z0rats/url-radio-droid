@@ -47,6 +47,10 @@
             android:exported="false"
             android:parentActivityName=".ui.MainActivity" />
         <activity
+            android:name=".ui.AlarmEditActivity"
+            android:exported="false"
+            android:parentActivityName=".ui.AlarmActivity" />
+        <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
             android:parentActivityName=".ui.MainActivity" />

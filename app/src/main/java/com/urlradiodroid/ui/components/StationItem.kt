@@ -21,10 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -70,9 +69,9 @@ fun StationItem(
     isPlaying: Boolean,
     isStarting: Boolean = false,
     isStartError: Boolean = false,
+    isDragging: Boolean = false,
     trackTitle: String? = null,
     onPlayClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onShareClick: () -> Unit,
@@ -134,6 +133,7 @@ fun StationItem(
             isPlaying = isPlaying,
             isStarting = isStarting,
             isStartError = isStartError,
+            isDragging = isDragging,
             trackTitle = trackTitle,
             onPlayClick = {
                 if (isSwipeRevealed) {
@@ -141,14 +141,6 @@ fun StationItem(
                     dragOffset = 0f
                 } else {
                     onPlayClick()
-                }
-            },
-            onFavoriteClick = {
-                if (isSwipeRevealed) {
-                    isSwipeRevealed = false
-                    dragOffset = 0f
-                } else {
-                    onFavoriteClick()
                 }
             },
             onCardClick = {
@@ -166,25 +158,34 @@ fun StationItem(
                         with(density) {
                             Modifier.offset(x = animatedOffset.toDp())
                         },
-                    ).pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                val maxOffset = -(revealThresholdPx + cardSpacingPx)
-                                val shouldReveal = dragOffset < maxOffset / 2
-                                isSwipeRevealed = shouldReveal
-                                if (shouldReveal) {
-                                    dragOffset = maxOffset
-                                } else {
-                                    dragOffset = 0f
+                    ).then(
+                        // Swiping to reveal edit/share/delete is suppressed while this item is
+                        // being drag-reordered (isDragging), rather than fighting the reorder
+                        // gesture for the same pointer stream.
+                        if (isDragging) {
+                            Modifier
+                        } else {
+                            Modifier.pointerInput(Unit) {
+                                detectHorizontalDragGestures(
+                                    onDragEnd = {
+                                        val maxOffset = -(revealThresholdPx + cardSpacingPx)
+                                        val shouldReveal = dragOffset < maxOffset / 2
+                                        isSwipeRevealed = shouldReveal
+                                        if (shouldReveal) {
+                                            dragOffset = maxOffset
+                                        } else {
+                                            dragOffset = 0f
+                                        }
+                                    },
+                                ) { _, dragAmount ->
+                                    val maxOffset = -(revealThresholdPx + cardSpacingPx)
+                                    val newOffset = (dragOffset + dragAmount).coerceIn(maxOffset, 0f)
+                                    dragOffset = newOffset
+                                    isSwipeRevealed = newOffset < maxOffset / 2
                                 }
-                            },
-                        ) { _, dragAmount ->
-                            val maxOffset = -(revealThresholdPx + cardSpacingPx)
-                            val newOffset = (dragOffset + dragAmount).coerceIn(maxOffset, 0f)
-                            dragOffset = newOffset
-                            isSwipeRevealed = newOffset < maxOffset / 2
-                        }
-                    },
+                            }
+                        },
+                    ),
         )
     }
 }
@@ -270,9 +271,9 @@ private fun StationCard(
     isPlaying: Boolean,
     isStarting: Boolean,
     isStartError: Boolean,
+    isDragging: Boolean,
     trackTitle: String?,
     onPlayClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -287,13 +288,13 @@ private fun StationCard(
         onClick = onCardClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isDragging) 8.dp else 0.dp),
         shape = MaterialTheme.shapes.large,
         border =
-            if (isActive) {
-                BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
-            } else {
-                BorderStroke(1.dp, card_border)
+            when {
+                isDragging -> BorderStroke(2.dp, glass_accent)
+                isActive -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+                else -> BorderStroke(1.dp, card_border)
             },
     ) {
         Row(
@@ -357,9 +358,14 @@ private fun StationCard(
                 }
             }
 
-            FavoriteIcon(
-                isFavorite = station.isFavorite,
-                onClick = onFavoriteClick,
+            // Purely a visual affordance hinting the list is reorderable — the actual gesture is
+            // bound to the whole card (see StationItem's dragHandleModifier), not this icon
+            // specifically, so it's non-interactive.
+            Icon(
+                imageVector = Icons.Default.DragIndicator,
+                contentDescription = stringResource(R.string.reorder_station),
+                tint = if (isDragging) glass_accent else text_hint,
+                modifier = Modifier.size(24.dp),
             )
 
             PlayPauseIcon(
@@ -367,22 +373,6 @@ private fun StationCard(
                 onClick = onPlayClick,
             )
         }
-    }
-}
-
-@Composable
-private fun FavoriteIcon(
-    isFavorite: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    IconButton(onClick = onClick, modifier = modifier.size(36.dp)) {
-        Icon(
-            imageVector = if (isFavorite) Icons.Default.Star else Icons.Outlined.StarBorder,
-            contentDescription =
-                stringResource(if (isFavorite) R.string.unpin_station else R.string.pin_station),
-            tint = if (isFavorite) glass_accent else text_hint,
-        )
     }
 }
 

@@ -26,6 +26,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
@@ -691,27 +692,18 @@ class RadioPlaybackService : MediaLibraryService() {
 
     fun getCurrentStationName(): String? = stationName
 
-    fun seekBackward(ms: Long) {
-        val p = player ?: return
-        val mediaItem = p.currentMediaItem ?: return
-        val dataSourceFactory = timeshift.seekBackward(ms) ?: return
-        val mediaSource =
-            ProgressiveMediaSource
-                .Factory(dataSourceFactory)
-                .createMediaSource(mediaItem)
-        p.setMediaSource(mediaSource)
-        p.prepare()
-        p.play()
-        refreshSnapshot()
-    }
+    fun seekBackward(ms: Long) = applyTimeshiftSeek(timeshift.seekBackward(ms))
 
-    fun seekToLive() {
+    fun seekToLive() = applyTimeshiftSeek(timeshift.seekToLive())
+
+    /** Rebuilds the media source from a timeshift seek's buffer-file [dataSourceFactory] and resumes playback. */
+    private fun applyTimeshiftSeek(dataSourceFactory: DataSource.Factory?) {
         val p = player ?: return
         val mediaItem = p.currentMediaItem ?: return
-        val dataSourceFactory = timeshift.seekToLive() ?: return
+        val factory = dataSourceFactory ?: return
         val mediaSource =
             ProgressiveMediaSource
-                .Factory(dataSourceFactory)
+                .Factory(factory)
                 .createMediaSource(mediaItem)
         p.setMediaSource(mediaSource)
         p.prepare()

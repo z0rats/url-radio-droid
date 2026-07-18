@@ -173,6 +173,49 @@ internal abstract class LegacyV6Database : RoomDatabase() {
     abstract fun radioStationDao(): LegacyV6RadioStationDao
 }
 
+// A standalone snapshot of the `radio_stations` table as it existed at schema version 7 (has
+// isFavorite, no sortOrder column) - see app/schemas/com.urlradiodroid.data.AppDatabase/7.json.
+// Same rationale as the other Legacy* entities: the real RadioStation entity now carries
+// sortOrder instead of isFavorite, which would defeat this migration test.
+@Entity(
+    tableName = "radio_stations",
+    indices = [
+        androidx.room.Index(value = ["name"], unique = true),
+        androidx.room.Index(value = ["streamUrl"], unique = true),
+    ],
+)
+internal data class LegacyV7RadioStation(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val streamUrl: String,
+    val customIcon: String? = null,
+    val isFavorite: Boolean = false,
+    val genre: String? = null,
+    val isHls: Boolean = false,
+    val radioBrowserUuid: String? = null,
+)
+
+@Dao
+internal interface LegacyV7RadioStationDao {
+    @Insert
+    suspend fun insertStation(station: LegacyV7RadioStation): Long
+}
+
+@Database(entities = [LegacyV7RadioStation::class], version = 7, exportSchema = false)
+internal abstract class LegacyV7Database : RoomDatabase() {
+    abstract fun radioStationDao(): LegacyV7RadioStationDao
+}
+
+// A standalone snapshot of the database as it existed at schema version 8 (radio_stations only, no
+// wake_alarms table). The real RadioStation/RadioStationDao already match the v8 shape exactly (no
+// column has changed since MIGRATION_7_8), so unlike the other Legacy* types above, this reuses
+// them directly rather than duplicating an identical entity/dao pair.
+@Database(entities = [RadioStation::class], version = 8, exportSchema = false)
+internal abstract class LegacyV8Database : RoomDatabase() {
+    abstract fun radioStationDao(): RadioStationDao
+}
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29])
 class AppDatabaseMigrationTest {
@@ -209,7 +252,7 @@ class AppDatabaseMigrationTest {
             // Reopen the same file through the real AppDatabase + migrations, deliberately without
             // fallbackToDestructiveMigration, so Room strictly validates the post-migration schema
             // against what AppDatabase actually expects - if a migration is wrong, this throws.
-            // All migrations must be registered since AppDatabase is now on version 7.
+            // All migrations must be registered since AppDatabase is now on version 8.
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
@@ -219,6 +262,8 @@ class AppDatabaseMigrationTest {
                         AppDatabase.MIGRATION_4_5,
                         AppDatabase.MIGRATION_5_6,
                         AppDatabase.MIGRATION_6_7,
+                        AppDatabase.MIGRATION_7_8,
+                        AppDatabase.MIGRATION_8_9,
                     ).allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
@@ -247,7 +292,7 @@ class AppDatabaseMigrationTest {
         }
 
     @Test
-    fun `migration 3 to 4 adds isFavorite defaulting to false and preserves existing data`() =
+    fun `migration 3 to 4 preserves existing data`() =
         runTest {
             val legacyDb =
                 Room
@@ -267,6 +312,8 @@ class AppDatabaseMigrationTest {
                         AppDatabase.MIGRATION_4_5,
                         AppDatabase.MIGRATION_5_6,
                         AppDatabase.MIGRATION_6_7,
+                        AppDatabase.MIGRATION_7_8,
+                        AppDatabase.MIGRATION_8_9,
                     ).allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
@@ -274,10 +321,6 @@ class AppDatabaseMigrationTest {
             assertEquals(1, stations.size)
             assertEquals("Rock FM", stations[0].name)
             assertEquals("http://example.com/rock", stations[0].streamUrl)
-            assertFalse(stations[0].isFavorite)
-
-            migratedDb.radioStationDao().setFavorite(stations[0].id, true)
-            assertTrue(migratedDb.radioStationDao().getStationById(stations[0].id)?.isFavorite == true)
 
             migratedDb.close()
         }
@@ -298,14 +341,18 @@ class AppDatabaseMigrationTest {
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
-                    .addMigrations(AppDatabase.MIGRATION_4_5, AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
-                    .allowMainThreadQueries()
+                    .addMigrations(
+                        AppDatabase.MIGRATION_4_5,
+                        AppDatabase.MIGRATION_5_6,
+                        AppDatabase.MIGRATION_6_7,
+                        AppDatabase.MIGRATION_7_8,
+                        AppDatabase.MIGRATION_8_9,
+                    ).allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
 
             assertEquals(1, stations.size)
             assertEquals("Rock FM", stations[0].name)
-            assertTrue(stations[0].isFavorite)
             assertEquals(null, stations[0].genre)
 
             migratedDb.radioStationDao().updateStation(stations[0].copy(genre = "Rock"))
@@ -330,8 +377,12 @@ class AppDatabaseMigrationTest {
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
-                    .addMigrations(AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_6_7)
-                    .allowMainThreadQueries()
+                    .addMigrations(
+                        AppDatabase.MIGRATION_5_6,
+                        AppDatabase.MIGRATION_6_7,
+                        AppDatabase.MIGRATION_7_8,
+                        AppDatabase.MIGRATION_8_9,
+                    ).allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
 
@@ -362,7 +413,7 @@ class AppDatabaseMigrationTest {
             val migratedDb =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, dbName)
-                    .addMigrations(AppDatabase.MIGRATION_6_7)
+                    .addMigrations(AppDatabase.MIGRATION_6_7, AppDatabase.MIGRATION_7_8, AppDatabase.MIGRATION_8_9)
                     .allowMainThreadQueries()
                     .build()
             val stations = migratedDb.radioStationDao().getAllStations()
@@ -377,6 +428,88 @@ class AppDatabaseMigrationTest {
                 "uuid-1",
                 migratedDb.radioStationDao().getStationById(stations[0].id)?.radioBrowserUuid,
             )
+
+            migratedDb.close()
+        }
+
+    @Test
+    fun `migration 7 to 8 replaces isFavorite with sortOrder matching the old favorites-first order`() =
+        runTest {
+            val legacyDb =
+                Room
+                    .databaseBuilder(context, LegacyV7Database::class.java, dbName)
+                    .allowMainThreadQueries()
+                    .build()
+            // Insertion order: Rock (not favorite), Jazz (favorite), Pop (not favorite). The old
+            // effective order (isFavorite DESC, id ASC) would have been: Jazz, Rock, Pop.
+            legacyDb.radioStationDao().insertStation(
+                LegacyV7RadioStation(name = "Rock FM", streamUrl = "http://example.com/rock"),
+            )
+            legacyDb.radioStationDao().insertStation(
+                LegacyV7RadioStation(name = "Jazz Radio", streamUrl = "http://example.com/jazz", isFavorite = true),
+            )
+            legacyDb.radioStationDao().insertStation(
+                LegacyV7RadioStation(name = "Pop Hits", streamUrl = "http://example.com/pop"),
+            )
+            legacyDb.close()
+
+            val migratedDb =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, dbName)
+                    .addMigrations(AppDatabase.MIGRATION_7_8, AppDatabase.MIGRATION_8_9)
+                    .allowMainThreadQueries()
+                    .build()
+            val stations = migratedDb.radioStationDao().getAllStations()
+
+            // The old favorites-first order is frozen as the new sortOrder, so upgrading doesn't
+            // visibly reshuffle anyone's list.
+            assertEquals(listOf("Jazz Radio", "Rock FM", "Pop Hits"), stations.map { it.name })
+            assertEquals(listOf(0, 1, 2), stations.map { it.sortOrder })
+
+            // Manual reordering (drag-to-reorder) now works directly against sortOrder.
+            migratedDb.radioStationDao().updateSortOrder(listOf(stations[2].id, stations[0].id, stations[1].id))
+            val reordered = migratedDb.radioStationDao().getAllStations()
+            assertEquals(listOf("Pop Hits", "Jazz Radio", "Rock FM"), reordered.map { it.name })
+
+            migratedDb.close()
+        }
+
+    @Test
+    fun `migration 8 to 9 adds an empty wake_alarms table and preserves existing station data`() =
+        runTest {
+            val legacyDb =
+                Room
+                    .databaseBuilder(context, LegacyV8Database::class.java, dbName)
+                    .allowMainThreadQueries()
+                    .build()
+            legacyDb.radioStationDao().insertStation(
+                RadioStation(name = "Rock FM", streamUrl = "http://example.com/rock"),
+            )
+            legacyDb.close()
+
+            val migratedDb =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, dbName)
+                    .addMigrations(AppDatabase.MIGRATION_8_9)
+                    .allowMainThreadQueries()
+                    .build()
+
+            val stations = migratedDb.radioStationDao().getAllStations()
+            assertEquals(1, stations.size)
+            assertEquals("Rock FM", stations[0].name)
+
+            assertTrue(migratedDb.wakeAlarmDao().getAllAlarms().isEmpty())
+            val id =
+                migratedDb.wakeAlarmDao().insertAlarm(
+                    WakeAlarm(
+                        enabled = true,
+                        hour = 7,
+                        minute = 0,
+                        stationName = "Rock FM",
+                        streamUrl = "http://example.com/rock",
+                    ),
+                )
+            assertEquals("Rock FM", migratedDb.wakeAlarmDao().getAlarmById(id)?.stationName)
 
             migratedDb.close()
         }

@@ -12,15 +12,17 @@ import com.urlradiodroid.ui.playback.PlaybackStateStore
 
 /**
  * Publishes up to 2 dynamic App Shortcuts (long-press the launcher icon) for one-tap playback:
- * the last-played station (from [PlaybackStateStore]) and the top favorite (same
- * `isFavorite`-first ordering as [RadioStation]'s DB query). Both shortcuts always show the
- * auto-generated emoji, not [RadioStation.customIcon] — same scope boundary as the notification's
- * large icon and PlaybackScreen (see CLAUDE.md), since the last-played entry only has a name/URL
- * from [PlaybackStateStore], not a full [RadioStation] to read a custom icon off of.
+ * the last-played station (from [PlaybackStateStore]) and the first station in manual list order
+ * (same `sortOrder` ordering as [RadioStation]'s DB query) — a stand-in "quick access" slot that
+ * replaced the old top-favorite shortcut once favorites/pinning was removed in favor of
+ * drag-to-reorder. Both shortcuts always show the auto-generated emoji, not
+ * [RadioStation.customIcon] — same scope boundary as the notification's large icon and
+ * PlaybackScreen (see CLAUDE.md), since the last-played entry only has a name/URL from
+ * [PlaybackStateStore], not a full [RadioStation] to read a custom icon off of.
  */
 object AppShortcuts {
     private const val ID_LAST_PLAYED = "last_played"
-    private const val ID_FAVORITE = "favorite"
+    private const val ID_FIRST_STATION = "first_station"
 
     /** Call whenever the station list changes; recomputes and replaces the whole shortcut set. */
     fun refresh(
@@ -28,7 +30,7 @@ object AppShortcuts {
         stations: List<RadioStation>,
     ) {
         val lastPlayed = PlaybackStateStore(context).restore()
-        val favorite = stations.firstOrNull { it.isFavorite }
+        val firstStation = stations.firstOrNull()
 
         val shortcuts = mutableListOf<ShortcutInfoCompat>()
         if (lastPlayed != null) {
@@ -42,14 +44,14 @@ object AppShortcuts {
                     rank = 0,
                 )
         }
-        if (favorite != null && favorite.streamUrl != lastPlayed?.streamUrl) {
+        if (firstStation != null && firstStation.streamUrl != lastPlayed?.streamUrl) {
             shortcuts +=
                 buildShortcut(
                     context = context,
-                    id = ID_FAVORITE,
-                    stationName = favorite.name,
-                    streamUrl = favorite.streamUrl,
-                    longLabel = context.getString(R.string.shortcut_favorite, favorite.name),
+                    id = ID_FIRST_STATION,
+                    stationName = firstStation.name,
+                    streamUrl = firstStation.streamUrl,
+                    longLabel = context.getString(R.string.shortcut_first_station, firstStation.name),
                     rank = 1,
                 )
         }

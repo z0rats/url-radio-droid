@@ -3,14 +3,19 @@ package com.urlradiodroid.data
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Shared `{name, streamUrl, customIcon, isFavorite, genre, isHls, radioBrowserUuid}` JSON shape used by both bulk and per-station backups. */
+/**
+ * Shared `{name, streamUrl, customIcon, genre, isHls, radioBrowserUuid}` JSON shape used by both
+ * bulk and per-station backups. Deliberately excludes `sortOrder` (app-local list position, not
+ * meaningful across devices/imports — imported stations are appended to the end of the target
+ * list, same as any other new station) and, since removal, `isFavorite` (older backup files may
+ * still have it; `RadioStationRepository.importStationsFromJson` simply doesn't read it anymore).
+ */
 object StationBackupJson {
     fun toJsonObject(station: RadioStation): JSONObject =
         JSONObject().apply {
             put("name", station.name)
             put("streamUrl", station.streamUrl)
             put("customIcon", station.customIcon ?: JSONObject.NULL)
-            put("isFavorite", station.isFavorite)
             put("genre", station.genre ?: JSONObject.NULL)
             put("isHls", station.isHls)
             put("radioBrowserUuid", station.radioBrowserUuid ?: JSONObject.NULL)

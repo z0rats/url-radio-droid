@@ -10,6 +10,8 @@
     <string name="stop">Stop</string>
     <string name="volume">Volume</string>
     <string name="no_stations">No saved stations</string>
+    <string name="no_search_results">No stations match your search</string>
+    <string name="no_station_selected">Select a station to see what\'s playing</string>
     <string name="error_invalid_url">Invalid URL</string>
     <string name="error_network">Network error</string>
     <string name="error_playback">Playback error</string>
@@ -30,8 +32,7 @@
     <string name="station_deleted">Station deleted</string>
     <string name="undo">Undo</string>
     <string name="search_stations">Search stations</string>
-    <string name="pin_station">Pin to top</string>
-    <string name="unpin_station">Unpin</string>
+    <string name="reorder_station">Drag to reorder</string>
     <string name="station_icon">Station Icon</string>
     <string name="choose_emoji">Choose Emoji</string>
     <string name="upload_image">Upload Image</string>
@@ -57,7 +58,7 @@
     <string name="share_station">Share station</string>
     <string name="import_stations">Import stations</string>
     <string name="export_error">Export failed</string>
-    <string name="import_error">Import failed: file is not a valid stations backup</string>
+    <string name="import_error">Import failed: unsupported or invalid file (expected a stations backup, OPML, M3U, or PLS file)</string>
     <string name="import_result">Imported %1$d, skipped %2$d duplicates</string>
     <string name="copy_track_title">Copy track title</string>
     <string name="track_title_copied">Track title copied</string>
@@ -84,8 +85,9 @@
     <string name="discover_ssl_warning">This station\'s HTTPS certificate failed validation and it may not play reliably</string>
     <string name="visit_website">Visit website</string>
     <string name="shortcut_last_played">Continue: %1$s</string>
-    <string name="shortcut_favorite">Favorite: %1$s</string>
-    <string name="alarm">Alarm</string>
+    <string name="shortcut_first_station">Quick play: %1$s</string>
+    <string name="alarms">Alarms</string>
+    <string name="alarm_enabled">Enabled</string>
     <string name="alarm_time">Wake-up time</string>
     <string name="alarm_station">Station</string>
     <string name="alarm_select_station">Select a station</string>
@@ -93,6 +95,12 @@
     <string name="alarm_enabled_toast">Alarm set for %1$s</string>
     <string name="alarm_disabled_toast">Alarm turned off</string>
     <string name="alarm_permission_needed">Allow \"Alarms &amp; reminders\" for this app to set the wake-up alarm</string>
+    <string name="alarm_add">Add alarm</string>
+    <string name="alarm_delete">Delete alarm</string>
+    <string name="alarm_delete_confirm">Delete this alarm?</string>
+    <string name="alarm_none">No alarms yet. Tap + to add one.</string>
+    <string name="alarm_new_title">New alarm</string>
+    <string name="alarm_edit_title">Edit alarm</string>
     <string name="settings">Settings</string>
     <string name="settings_metered_warning">Mobile data warning</string>
     <string name="settings_metered_warning_description">Ask for confirmation before playing on a metered connection</string>

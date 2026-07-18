@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,10 +32,11 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -71,10 +73,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urlradiodroid.R
@@ -84,6 +88,8 @@ import com.urlradiodroid.data.StationBackupJson
 import com.urlradiodroid.ui.components.NowPlayingBottomBar
 import com.urlradiodroid.ui.components.PlaybackStatus
 import com.urlradiodroid.ui.components.StationItem
+import com.urlradiodroid.ui.components.dragContainer
+import com.urlradiodroid.ui.components.rememberDragDropState
 import com.urlradiodroid.ui.playback.SettingsStore
 import com.urlradiodroid.ui.theme.Spacing
 import com.urlradiodroid.ui.theme.URLRadioDroidTheme
@@ -94,6 +100,7 @@ import com.urlradiodroid.ui.theme.card_border
 import com.urlradiodroid.ui.theme.card_surface
 import com.urlradiodroid.ui.theme.card_surface_active
 import com.urlradiodroid.ui.theme.glass_accent
+import com.urlradiodroid.ui.theme.isWideScreen
 import com.urlradiodroid.ui.theme.text_primary
 import com.urlradiodroid.ui.theme.text_secondary
 import com.urlradiodroid.util.AppShortcuts
@@ -210,7 +217,16 @@ class MainActivity : ComponentActivity() {
                                 putExtra(PlaybackActivity.EXTRA_STATION_NAME, station.name)
                                 putExtra(PlaybackActivity.EXTRA_STREAM_URL, station.streamUrl)
                             }
-                        startActivity(intent)
+                        // Slides PlaybackActivity up from the bottom over this one (which stays
+                        // put via stay.xml) instead of the platform's default cross-fade, so
+                        // opening the full player reads as the mini player "expanding" into it.
+                        val options =
+                            androidx.core.app.ActivityOptionsCompat.makeCustomAnimation(
+                                this,
+                                R.anim.slide_up_in,
+                                R.anim.stay,
+                            )
+                        startActivity(intent, options.toBundle())
                     },
                     playbackService = playbackService,
                     onStopPlayback = {
@@ -405,7 +421,6 @@ fun MainScreen(
 
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    var showMenu by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val stationDeletedMessage = stringResource(R.string.station_deleted)
@@ -494,7 +509,10 @@ fun MainScreen(
                 }
             },
             bottomBar = {
-                AnimatedVisibility(visible = currentPlayingStation != null) {
+                // On a wide screen the detail pane already shows the full now-playing view
+                // persistently, so the mini player would be a redundant second now-playing
+                // affordance.
+                AnimatedVisibility(visible = currentPlayingStation != null && !isWideScreen()) {
                     currentPlayingStation?.let { station ->
                         val isStationPlaying = currentPlayingStationId == station.id && isPlaying
                         NowPlayingBottomBar(
@@ -524,169 +542,74 @@ fun MainScreen(
                 }
             },
         ) { paddingValues ->
-            Column(
-                modifier =
+            val listPane: @Composable (Modifier) -> Unit = { paneModifier ->
+                StationListPane(
+                    viewModel = viewModel,
+                    stations = stations,
+                    searchQuery = searchQuery,
+                    currentPlayingStationId = currentPlayingStationId,
+                    isPlaying = isPlaying,
+                    isStarting = isStarting,
+                    startError = startError,
+                    trackTitle = trackTitle,
+                    onDiscoverStationsClick = onDiscoverStationsClick,
+                    onAlarmClick = onAlarmClick,
+                    onSettingsClick = onSettingsClick,
+                    onStationEdit = onStationEdit,
+                    onStationDelete = onStationDelete,
+                    onStationShareClick = onStationShareClick,
+                    onStationItemPlayClick = onStationItemPlayClick,
+                    onStopPlayback = onStopPlayback,
+                    modifier = paneModifier,
+                )
+            }
+
+            if (isWideScreen()) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.statusBars)
+                            .padding(paddingValues),
+                ) {
+                    listPane(Modifier.width(360.dp).fillMaxHeight())
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxHeight()
+                                .width(1.dp)
+                                .background(card_border),
+                    )
+                    Box(
+                        modifier = Modifier.weight(1f).fillMaxHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (currentPlayingStation != null) {
+                            NowPlayingContent(
+                                stationName = currentPlayingStation.name,
+                                streamUrl = currentPlayingStation.streamUrl,
+                                playbackService = playbackService,
+                                onPlayStopClick = {
+                                    if (isPlaying) onStopPlayback() else onPlayStationWithState(currentPlayingStation)
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        } else {
+                            EmptyStationsMessage(
+                                icon = "🎧",
+                                title = null,
+                                message = stringResource(R.string.no_station_selected),
+                            )
+                        }
+                    }
+                }
+            } else {
+                listPane(
                     Modifier
                         .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.statusBars)
                         .padding(paddingValues),
-            ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AssistChip(
-                        onClick = onDiscoverStationsClick,
-                        label = { Text(stringResource(R.string.discover_stations)) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.TravelExplore,
-                                contentDescription = null,
-                                tint = glass_accent,
-                            )
-                        },
-                        shape = MaterialTheme.shapes.medium,
-                        colors =
-                            AssistChipDefaults.assistChipColors(
-                                containerColor = card_surface,
-                                labelColor = text_primary,
-                            ),
-                        border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = card_border),
-                    )
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = stringResource(R.string.more_options),
-                                tint = text_secondary,
-                            )
-                        }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.alarm)) },
-                                onClick = {
-                                    showMenu = false
-                                    onAlarmClick()
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.settings)) },
-                                onClick = {
-                                    showMenu = false
-                                    onSettingsClick()
-                                },
-                            )
-                        }
-                    }
-                }
-
-                AnimatedVisibility(visible = viewModel.stations.value.size > 4) {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { viewModel.updateSearchQuery(it) },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
-                        placeholder = { Text(stringResource(R.string.search_stations)) },
-                        colors =
-                            TextFieldDefaults.colors(
-                                focusedContainerColor = card_surface,
-                                unfocusedContainerColor = card_surface,
-                                focusedTextColor = text_secondary,
-                                unfocusedTextColor = text_secondary,
-                            ),
-                        shape = MaterialTheme.shapes.medium,
-                    )
-                }
-
-                if (stations.isEmpty() && searchQuery.isBlank()) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        // Weighted spacers (rather than Box centering) keep this truly centered
-                        // regardless of the bottom inset Scaffold reserves for the FAB.
-                        Spacer(modifier = Modifier.weight(1f))
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(96.dp)
-                                    .clip(androidx.compose.foundation.shape.CircleShape)
-                                    .background(card_surface_active),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = "📻",
-                                style = MaterialTheme.typography.displayMedium,
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = text_secondary,
-                        )
-                        Spacer(modifier = Modifier.height(Spacing.sm))
-                        Text(
-                            text = stringResource(R.string.no_stations),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = text_secondary,
-                            textAlign = TextAlign.Center,
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                } else {
-                    LazyColumn(
-                        state = rememberLazyListState(),
-                        modifier = Modifier.fillMaxSize(),
-                        // Scaffold reserves space for bottomBar but not for the floating action
-                        // button, which just overlays content - extra bottom padding here keeps
-                        // the last station's play button clear of the FAB when the list is long.
-                        contentPadding =
-                            PaddingValues(
-                                start = Spacing.md,
-                                end = Spacing.md,
-                                top = Spacing.sm,
-                                bottom = 88.dp,
-                            ),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        items(
-                            items = stations,
-                            key = { it.id },
-                        ) { station ->
-                            val isActive = currentPlayingStationId == station.id
-                            val isStationPlaying = isActive && isPlaying
-                            val isStationStarting = isActive && isStarting
-                            val isStationStartError = isActive && startError
-                            StationItem(
-                                station = station,
-                                isActive = isActive,
-                                isPlaying = isStationPlaying,
-                                isStarting = isStationStarting,
-                                isStartError = isStationStartError,
-                                trackTitle = if (isStationPlaying) trackTitle else null,
-                                onPlayClick = {
-                                    if (isStationPlaying) onStopPlayback() else onStationItemPlayClick(station)
-                                },
-                                onFavoriteClick = { viewModel.toggleFavorite(station) },
-                                onEditClick = { onStationEdit(station) },
-                                onDeleteClick = { onStationDelete(station) },
-                                onShareClick = { onStationShareClick(station) },
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .widthIn(max = 600.dp),
-                            )
-                        }
-                    }
-                }
+                )
             }
         }
 
@@ -713,6 +636,234 @@ fun MainScreen(
                 },
             )
         }
+    }
+}
+
+// The station list + its header row (Discover chip, overflow menu) and search field. Shared by
+// MainScreen's phone layout (fills the whole screen) and its wide-screen two-pane layout (the
+// left pane, alongside a persistent NowPlayingContent detail pane on the right).
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StationListPane(
+    viewModel: MainViewModel,
+    stations: List<RadioStation>,
+    searchQuery: String,
+    currentPlayingStationId: Long?,
+    isPlaying: Boolean,
+    isStarting: Boolean,
+    startError: Boolean,
+    trackTitle: String?,
+    onDiscoverStationsClick: () -> Unit,
+    onAlarmClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onStationEdit: (RadioStation) -> Unit,
+    onStationDelete: (RadioStation) -> Unit,
+    onStationShareClick: (RadioStation) -> Unit,
+    onStationItemPlayClick: (RadioStation) -> Unit,
+    onStopPlayback: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AssistChip(
+                onClick = onDiscoverStationsClick,
+                label = { Text(stringResource(R.string.discover_stations)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.TravelExplore,
+                        contentDescription = null,
+                        tint = glass_accent,
+                    )
+                },
+                shape = MaterialTheme.shapes.medium,
+                colors =
+                    AssistChipDefaults.assistChipColors(
+                        containerColor = card_surface,
+                        labelColor = text_primary,
+                    ),
+                border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = card_border),
+            )
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more_options),
+                        tint = text_secondary,
+                    )
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.alarms)) },
+                        onClick = {
+                            showMenu = false
+                            onAlarmClick()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.settings)) },
+                        onClick = {
+                            showMenu = false
+                            onSettingsClick()
+                        },
+                    )
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = viewModel.stations.value.size > 4) {
+            TextField(
+                value = searchQuery,
+                onValueChange = { viewModel.updateSearchQuery(it) },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                placeholder = { Text(stringResource(R.string.search_stations)) },
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = card_surface,
+                        unfocusedContainerColor = card_surface,
+                        focusedTextColor = text_secondary,
+                        unfocusedTextColor = text_secondary,
+                    ),
+                shape = MaterialTheme.shapes.medium,
+            )
+        }
+
+        if (stations.isEmpty() && searchQuery.isBlank()) {
+            EmptyStationsMessage(
+                icon = "📻",
+                title = stringResource(R.string.app_name),
+                message = stringResource(R.string.no_stations),
+            )
+        } else if (stations.isEmpty() && searchQuery.isNotBlank()) {
+            EmptyStationsMessage(
+                icon = "🔍",
+                title = null,
+                message = stringResource(R.string.no_search_results),
+            )
+        } else {
+            val lazyListState = rememberLazyListState()
+            // Reordering only makes sense against the full, unfiltered list — dragging a
+            // station past ones hidden by an active search would be ambiguous about what
+            // "moving it" even means, so the gesture is simply not attached while
+            // searchQuery is non-blank (moveStation()/persistStationOrder() are never
+            // called; stations stays the full list either way, only what's *shown* here
+            // is filtered by MainViewModel.filteredStations).
+            val dragDropState =
+                rememberDragDropState(
+                    lazyListState = lazyListState,
+                    onDragStopped = { viewModel.persistStationOrder() },
+                    onMove = { from, to -> viewModel.moveStation(from, to) },
+                )
+            LazyColumn(
+                state = lazyListState,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .then(if (searchQuery.isBlank()) Modifier.dragContainer(dragDropState) else Modifier),
+                // Scaffold reserves space for bottomBar but not for the floating action
+                // button, which just overlays content - extra bottom padding here keeps
+                // the last station's play button clear of the FAB when the list is long.
+                contentPadding =
+                    PaddingValues(
+                        start = Spacing.md,
+                        end = Spacing.md,
+                        top = Spacing.sm,
+                        bottom = 88.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                itemsIndexed(
+                    items = stations,
+                    key = { _, station -> station.id },
+                ) { index, station ->
+                    val isActive = currentPlayingStationId == station.id
+                    val isStationPlaying = isActive && isPlaying
+                    val isStationStarting = isActive && isStarting
+                    val isStationStartError = isActive && startError
+                    val isDragging = index == dragDropState.draggingItemIndex
+                    StationItem(
+                        station = station,
+                        isActive = isActive,
+                        isPlaying = isStationPlaying,
+                        isStarting = isStationStarting,
+                        isStartError = isStationStartError,
+                        isDragging = isDragging,
+                        trackTitle = if (isStationPlaying) trackTitle else null,
+                        onPlayClick = {
+                            if (isStationPlaying) onStopPlayback() else onStationItemPlayClick(station)
+                        },
+                        onEditClick = { onStationEdit(station) },
+                        onDeleteClick = { onStationDelete(station) },
+                        onShareClick = { onStationShareClick(station) },
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .widthIn(max = 600.dp)
+                                .zIndex(if (isDragging) 1f else 0f)
+                                .graphicsLayer {
+                                    translationY = if (isDragging) dragDropState.draggingItemOffset else 0f
+                                },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStationsMessage(
+    icon: String,
+    title: String?,
+    message: String,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // Weighted spacers (rather than Box centering) keep this truly centered
+        // regardless of the bottom inset Scaffold reserves for the FAB.
+        Spacer(modifier = Modifier.weight(1f))
+        Box(
+            modifier =
+                Modifier
+                    .size(96.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(card_surface_active),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = icon,
+                style = MaterialTheme.typography.displayMedium,
+            )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = text_secondary,
+            )
+            Spacer(modifier = Modifier.height(Spacing.sm))
+        }
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = text_secondary,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

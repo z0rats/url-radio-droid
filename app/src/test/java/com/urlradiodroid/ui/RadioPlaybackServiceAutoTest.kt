@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 
 /**
  * Covers the Android Auto / Assistant browse tree end to end: the station list surfaces as
- * browsable media items in the DB's favorite-first order, and "tapping" one (the real user
+ * browsable media items in the DB's manual `sortOrder` order, and "tapping" one (the real user
  * scenario: [RadioPlaybackService.playFromBrowseTree] is what
  * `MediaLibrarySessionCallback.onAddMediaItems` calls when a browse-tree item is selected) actually
  * starts that station playing through the real player/session pipeline.
@@ -37,7 +37,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [29])
 class RadioPlaybackServiceAutoTest {
     @Test
-    fun `browse tree lists stations favorite-first and tapping one starts it playing`() {
+    fun `browse tree lists stations in sortOrder and tapping one starts it playing`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val dao = AppDatabase.getDatabase(context).radioStationDao()
         val service = Robolectric.buildService(RadioPlaybackService::class.java).create().get()
@@ -47,19 +47,23 @@ class RadioPlaybackServiceAutoTest {
                 // AppDatabase.getDatabase caches its Room instance for the process lifetime (see the
                 // class doc), so this clears out anything a previous test in the same JVM left behind.
                 dao.getAllStations().forEach { dao.deleteStation(it.id) }
-                dao.insertStation(RadioStation(name = "Jazz FM", streamUrl = "https://example.com/jazz.m3u8"))
-                dao.insertStation(RadioStation(name = "Rock FM", streamUrl = "https://example.com/rock.m3u8"))
                 dao.insertStation(
                     RadioStation(
                         name = "Classical FM",
                         streamUrl = "https://example.com/classical.m3u8",
-                        isFavorite = true,
+                        sortOrder = 0,
                     ),
+                )
+                dao.insertStation(
+                    RadioStation(name = "Jazz FM", streamUrl = "https://example.com/jazz.m3u8", sortOrder = 1),
+                )
+                dao.insertStation(
+                    RadioStation(name = "Rock FM", streamUrl = "https://example.com/rock.m3u8", sortOrder = 2),
                 )
                 service.loadBrowsableStations()
             }
 
-        // Same isFavorite-DESC, id-ASC ordering as the main station list (RadioStationDao.getAllStations()).
+        // Same sortOrder ASC, id ASC ordering as the main station list (RadioStationDao.getAllStations()).
         assertEquals(
             listOf("Classical FM", "Jazz FM", "Rock FM"),
             browseItems.map { it.mediaMetadata.title.toString() },

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
@@ -38,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.urlradiodroid.R
 import com.urlradiodroid.data.RadioStationRepository
@@ -103,10 +105,10 @@ fun SettingsScreen(
             if (uri == null) return@rememberLauncherForActivityResult
             coroutineScope.launch {
                 try {
-                    val json =
+                    val content =
                         context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
                             ?: throw java.io.IOException("Cannot open file")
-                    val result = viewModel.importStationsJson(json)
+                    val result = viewModel.importStations(content)
                     Toast
                         .makeText(
                             context,
@@ -142,8 +144,10 @@ fun SettingsScreen(
                     ).padding(paddingValues)
                     .padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Card(
+                modifier = Modifier.fillMaxWidth().widthIn(max = 600.dp),
                 colors = CardDefaults.cardColors(containerColor = card_surface),
                 shape = MaterialTheme.shapes.large,
             ) {
@@ -180,6 +184,7 @@ fun SettingsScreen(
 
             Card(
                 onClick = onExportClick,
+                modifier = Modifier.fillMaxWidth().widthIn(max = 600.dp),
                 colors = CardDefaults.cardColors(containerColor = card_surface),
                 shape = MaterialTheme.shapes.large,
             ) {
@@ -192,7 +197,8 @@ fun SettingsScreen(
             }
 
             Card(
-                onClick = { importLauncher.launch(arrayOf("application/json")) },
+                onClick = { importLauncher.launch(arrayOf("*/*")) },
+                modifier = Modifier.fillMaxWidth().widthIn(max = 600.dp),
                 colors = CardDefaults.cardColors(containerColor = card_surface),
                 shape = MaterialTheme.shapes.large,
             ) {

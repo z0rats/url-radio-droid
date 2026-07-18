@@ -18,14 +18,14 @@ class AppShortcutsTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     @Test
-    fun `refresh publishes no shortcuts when there is no last-played station and no favorite`() {
+    fun `refresh publishes no shortcuts when there is no last-played station and no stations`() {
         AppShortcuts.refresh(context, stations = emptyList())
 
         assertTrue(ShortcutManagerCompat.getDynamicShortcuts(context).isEmpty())
     }
 
     @Test
-    fun `refresh publishes only a last-played shortcut when nothing is favorited`() {
+    fun `refresh publishes only a last-played shortcut when the station list is empty`() {
         PlaybackStateStore(context).save("Radio One", "https://stream.example.com/one")
 
         AppShortcuts.refresh(
@@ -40,15 +40,15 @@ class AppShortcutsTest {
     }
 
     @Test
-    fun `refresh publishes only a favorite shortcut when nothing was ever played`() {
+    fun `refresh publishes only a first-station shortcut when nothing was ever played`() {
         AppShortcuts.refresh(
             context,
-            stations = listOf(station(name = "Jazz FM", url = "https://stream.example.com/jazz", isFavorite = true)),
+            stations = listOf(station(name = "Jazz FM", url = "https://stream.example.com/jazz")),
         )
 
         val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(context)
         assertEquals(1, shortcuts.size)
-        assertEquals("favorite", shortcuts[0].id)
+        assertEquals("first_station", shortcuts[0].id)
         assertEquals("Jazz FM", shortcuts[0].shortLabel)
     }
 
@@ -61,21 +61,37 @@ class AppShortcutsTest {
             stations =
                 listOf(
                     station(name = "Radio One", url = "https://stream.example.com/one"),
-                    station(name = "Jazz FM", url = "https://stream.example.com/jazz", isFavorite = true),
+                    station(name = "Jazz FM", url = "https://stream.example.com/jazz"),
                 ),
         )
 
         val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(context).sortedBy { it.rank }
-        assertEquals(listOf("last_played", "favorite"), shortcuts.map { it.id })
+        assertEquals(listOf("last_played", "first_station"), shortcuts.map { it.id })
     }
 
     @Test
-    fun `refresh dedupes to a single shortcut when the favorite is also the last-played station`() {
+    fun `refresh uses the first station in list order, not just any station`() {
+        AppShortcuts.refresh(
+            context,
+            stations =
+                listOf(
+                    station(name = "First In List", url = "https://stream.example.com/first"),
+                    station(name = "Second In List", url = "https://stream.example.com/second"),
+                ),
+        )
+
+        val shortcuts = ShortcutManagerCompat.getDynamicShortcuts(context)
+        assertEquals(1, shortcuts.size)
+        assertEquals("First In List", shortcuts[0].shortLabel)
+    }
+
+    @Test
+    fun `refresh dedupes to a single shortcut when the first station is also the last-played station`() {
         PlaybackStateStore(context).save("Jazz FM", "https://stream.example.com/jazz")
 
         AppShortcuts.refresh(
             context,
-            stations = listOf(station(name = "Jazz FM", url = "https://stream.example.com/jazz", isFavorite = true)),
+            stations = listOf(station(name = "Jazz FM", url = "https://stream.example.com/jazz")),
         )
 
         assertEquals(1, ShortcutManagerCompat.getDynamicShortcuts(context).size)
@@ -84,6 +100,5 @@ class AppShortcutsTest {
     private fun station(
         name: String,
         url: String,
-        isFavorite: Boolean = false,
-    ) = RadioStation(name = name, streamUrl = url, isFavorite = isFavorite)
+    ) = RadioStation(name = name, streamUrl = url)
 }

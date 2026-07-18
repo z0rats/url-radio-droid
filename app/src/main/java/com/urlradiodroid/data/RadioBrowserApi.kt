@@ -63,27 +63,12 @@ class RadioBrowserApi(
         searchBy: SearchBy,
         limit: Int = 30,
     ): List<RadioBrowserStation> =
-        withContext(Dispatchers.IO) {
-            val url =
-                baseUrl
-                    .newBuilder()
-                    .addPathSegments("json/stations/search")
-                    .addQueryParameter(searchBy.param, query)
-                    .addQueryParameter("limit", limit.toString())
-                    .addQueryParameter("hidebroken", "true")
-                    .addQueryParameter("order", "votes")
-                    .addQueryParameter("reverse", "true")
-                    .build()
-            val request =
-                Request
-                    .Builder()
-                    .url(url)
-                    .header("User-Agent", USER_AGENT)
-                    .build()
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) throw IOException("HTTP ${response.code}")
-                parseStations(response.body?.string().orEmpty())
-            }
+        fetchStations {
+            addQueryParameter(searchBy.param, query)
+            addQueryParameter("limit", limit.toString())
+            addQueryParameter("hidebroken", "true")
+            addQueryParameter("order", "votes")
+            addQueryParameter("reverse", "true")
         }
 
     /**
@@ -99,17 +84,23 @@ class RadioBrowserApi(
         radiusMeters: Int,
         limit: Int = 30,
     ): List<RadioBrowserStation> =
+        fetchStations {
+            addQueryParameter("geo_lat", latitude.toString())
+            addQueryParameter("geo_long", longitude.toString())
+            addQueryParameter("geo_distance", radiusMeters.toString())
+            addQueryParameter("limit", limit.toString())
+            addQueryParameter("hidebroken", "true")
+            addQueryParameter("order", "distance")
+        }
+
+    /** Shared GET+parse pipeline for the station-search endpoint; [buildQuery] adds this call's own query params. */
+    private suspend fun fetchStations(buildQuery: HttpUrl.Builder.() -> Unit): List<RadioBrowserStation> =
         withContext(Dispatchers.IO) {
             val url =
                 baseUrl
                     .newBuilder()
                     .addPathSegments("json/stations/search")
-                    .addQueryParameter("geo_lat", latitude.toString())
-                    .addQueryParameter("geo_long", longitude.toString())
-                    .addQueryParameter("geo_distance", radiusMeters.toString())
-                    .addQueryParameter("limit", limit.toString())
-                    .addQueryParameter("hidebroken", "true")
-                    .addQueryParameter("order", "distance")
+                    .apply(buildQuery)
                     .build()
             val request =
                 Request

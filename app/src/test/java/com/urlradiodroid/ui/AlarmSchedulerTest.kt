@@ -1,5 +1,7 @@
 package com.urlradiodroid.ui
 
+import android.app.AlarmManager
+import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -7,6 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowAlarmManager
 import java.util.Calendar
@@ -66,7 +69,7 @@ class AlarmSchedulerTest {
     fun `schedule succeeds when exact-alarm permission is granted`() {
         ShadowAlarmManager.setCanScheduleExactAlarms(true)
 
-        val result = AlarmScheduler.schedule(ApplicationProvider.getApplicationContext(), 7, 30)
+        val result = AlarmScheduler.schedule(ApplicationProvider.getApplicationContext(), 1L, 7, 30)
 
         assertTrue(result)
     }
@@ -76,7 +79,7 @@ class AlarmSchedulerTest {
     fun `schedule returns false instead of crashing when exact-alarm permission is missing`() {
         ShadowAlarmManager.setCanScheduleExactAlarms(false)
 
-        val result = AlarmScheduler.schedule(ApplicationProvider.getApplicationContext(), 7, 30)
+        val result = AlarmScheduler.schedule(ApplicationProvider.getApplicationContext(), 1L, 7, 30)
 
         assertFalse(result)
     }
@@ -84,8 +87,24 @@ class AlarmSchedulerTest {
     @Config(sdk = [29])
     @Test
     fun `schedule succeeds on API levels below the exact-alarm permission model`() {
-        val result = AlarmScheduler.schedule(ApplicationProvider.getApplicationContext(), 7, 30)
+        val result = AlarmScheduler.schedule(ApplicationProvider.getApplicationContext(), 1L, 7, 30)
 
         assertTrue(result)
+    }
+
+    @Config(sdk = [31])
+    @Test
+    fun `schedule and cancel for one alarm id don't affect another`() {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        val shadow = shadowOf(alarmManager)
+
+        AlarmScheduler.schedule(context, 1L, 7, 30)
+        AlarmScheduler.schedule(context, 2L, 8, 0)
+        assertEquals(2, shadow.scheduledAlarms.size)
+
+        AlarmScheduler.cancel(context, 1L)
+        assertEquals(1, shadow.scheduledAlarms.size)
     }
 }

@@ -17,9 +17,9 @@ A minimalist Android application for listening to internet radio via direct stre
 - **🔎 Discover stations**: search the [Radio Browser](https://api.radio-browser.info/) public directory by name, genre, country, or language and add results straight to your library, no need to hunt down stream URLs yourself; results show country flag, codec/bitrate, vote count, and a homepage link, and flag stations whose HTTPS certificate failed validation
 - **📍 "Near me" search**: find stations near you using your device's coarse location — sent only for that one search, never stored, with an in-app explanation before the system permission prompt
 - 📜 View list of saved stations with search (when more than 4 stations)
-- **⭐ Favorites / pinning**: tap the star on any station to pin it to the top of the list; pinned stations stay sorted above the rest
+- **✋ Drag to reorder**: long-press a station and drag it up or down to arrange your list exactly how you want
 - **🏷️ Genres/tags**: stations added via Discover pick up the directory's tags automatically; manually-added stations can have one too; search matches it alongside name and URL
-- **📱 App Shortcuts**: long-press the launcher icon for one-tap play of your last-played and favorite station, no need to open the app first
+- **📱 App Shortcuts**: long-press the launcher icon for one-tap play of your last-played station and the first one in your list, no need to open the app first
 - **⚙️ Settings screen**: export/import your stations and toggle a metered-connection playback warning
 - **🌐 Localization**: available in English, Russian, Spanish, and Simplified Chinese
 - ▶️ Play streams using ExoPlayer
@@ -34,11 +34,11 @@ A minimalist Android application for listening to internet radio via direct stre
 - **🔁 Reliable background playback**: automatically resumes the last station if the system kills and restarts the app process; reconnects on network loss with capped exponential backoff (up to 5 attempts) instead of hammering the stream or retrying forever
 - **🎶 Live track title**: shows the current track (from ICY/Shoutcast metadata, when the stream provides it) in the mini player and playback screen, with a one-tap copy-to-clipboard button
 - **😴 Sleep timer**: stop playback automatically after 15/30/45/60 minutes, with a live countdown shown on the playback screen
-- **⏰ Wake-up alarm**: set a daily alarm (time + station) from the overflow menu; fires via the system alarm clock even if the app isn't running, and reschedules itself for the next day automatically
+- **⏰ Wake-up alarms**: set multiple daily alarms (each with its own time + station) from the overflow menu; each fires via the system alarm clock even if the app isn't running, and reschedules itself for the next day automatically
 - **🏠 Home screen widget**: play/pause, station name, and next/prev buttons right from the home screen, no need to open the app
 - **🚗 Android Auto**: your station list shows up as a browsable/playable list on the car head unit; tap a station to start it playing
 - 💾 Local data storage using Room Database, with unique name/URL constraints enforced at the DB level and safe migrations (no data loss on upgrade)
-- **📤 Export / share / import stations**: back up all your stations to a JSON file (favorite status included) or share it to another app, share a single station straight from its list item, and import a backup (e.g. after reinstalling or switching devices)
+- **📤 Export / share / import stations**: back up all your stations to a JSON file or share it to another app, share a single station straight from its list item, and import a backup (e.g. after reinstalling or switching devices)
 - 🎨 Modern UI with Jetpack Compose (liquid glass style)
 - 🌐 Network availability check before playback
 - ✔️ URL validation when adding stations, plus a live reachability check (HEAD/GET probe) before saving so a dead stream is caught immediately instead of failing the first time you hit play
@@ -97,7 +97,7 @@ Buffer file is created in app cache and removed when playback stops. **Timeshift
 Overflow menu (⋮) on the main screen:
 
 - **Export stations**: sends a JSON backup of *all* your stations (name, stream URL, custom icon) via the system share sheet — pick Telegram, WhatsApp, email, "Save to Files", etc.
-- **Import stations**: reads a previously exported/shared JSON file and adds any stations that aren't already in your list (stations with a name or URL that already exists are skipped, not overwritten).
+- **Import stations**: reads a previously exported/shared JSON backup, or an OPML/M3U/M3U8/PLS playlist file from another app, and adds any stations that aren't already in your list (stations with a name or URL that already exists are skipped, not overwritten). The format is detected automatically from the file's content.
 
 Swipe left on a single station in the list to reveal **Edit / Share / Delete** — Share sends just that one station as its own JSON file (named after the station), so you can quickly send one station to a friend without exporting your whole list. Delete is immediate (no confirmation dialog), but a Snackbar with an **Undo** action lets you restore the station if you tap it by mistake.
 
@@ -130,6 +130,9 @@ app/src/main/
 │   │   ├── RadioStationRepository.kt # Data access + JSON export/import
 │   │   ├── StationBackupJson.kt     # Shared station <-> JSON serialization
 │   │   ├── RadioBrowserApi.kt       # Client for the Radio Browser directory (station search)
+│   │   ├── WakeAlarm.kt             # Entity for a wake-up alarm (multiple rows supported)
+│   │   ├── WakeAlarmDao.kt          # DAO for wake-up alarm CRUD
+│   │   ├── AlarmRepository.kt       # Data access + one-time SharedPreferences->Room legacy alarm import
 │   │   └── AppDatabase.kt           # Room database + migrations (schemas checked into app/schemas/)
 │   ├── ui/
 │   │   ├── MainScreen.kt            # Main screen (Compose) with list and mini player
@@ -140,20 +143,23 @@ app/src/main/
 │   │   ├── DiscoverStationsViewModel.kt # Debounced search state, add/duplicate handling
 │   │   ├── PlaybackScreen.kt        # Full playback screen (track title, sleep timer)
 │   │   ├── RadioPlaybackService.kt  # Background playback service (retry backoff, sleep timer)
-│   │   ├── AlarmScreen.kt           # Wake-up alarm settings (enable, time, station)
-│   │   ├── AlarmScheduler.kt        # AlarmManager.setAlarmClock scheduling, next-trigger-time math
-│   │   ├── AlarmReceiver.kt         # Fires at alarm time: starts playback, reschedules for tomorrow
-│   │   ├── BootReceiver.kt          # Reschedules the alarm after a reboot clears AlarmManager
+│   │   ├── AlarmListScreen.kt       # List of wake-up alarms (enable/delete per row, add new)
+│   │   ├── AlarmListViewModel.kt    # Alarm list state + legacy SharedPreferences alarm migration event
+│   │   ├── AlarmEditScreen.kt       # Add/edit a single wake-up alarm (enable, time, station, delete)
+│   │   ├── AlarmEditViewModel.kt    # Form state, save/delete (UiState + events channel)
+│   │   ├── AlarmScheduler.kt        # AlarmManager.setAlarmClock scheduling per alarm id, next-trigger-time math
+│   │   ├── AlarmReceiver.kt         # Fires at an alarm's time: starts playback, reschedules for tomorrow
+│   │   ├── BootReceiver.kt          # Reschedules every enabled alarm after a reboot clears AlarmManager
 │   │   ├── playback/
 │   │   │   ├── StreamRecorder.kt        # Records stream to buffer file (OkHttp), parses ICY metadata
 │   │   │   ├── LiveFileDataSource.kt    # Media3 DataSource: read buffer, block at EOF
 │   │   │   ├── TimeshiftController.kt   # Buffer file lifecycle + seek math for rewind/live
 │   │   │   ├── PlaybackStateStore.kt    # Persists last station so playback can resume after process death
-│   │   │   ├── AlarmStateStore.kt       # Persists the wake-up alarm (enabled, time, station)
+│   │   │   ├── AlarmStateStore.kt       # Legacy pre-multi-alarm SharedPreferences store (read once for migration)
 │   │   │   └── WidgetStateStore.kt      # Persists station/isPlaying so the home screen widget can render it
 │   │   ├── components/
 │   │   │   ├── NowPlayingBottomBar.kt  # Mini player: play/pause, rewind 5s, live, track title
-│   │   │   ├── StationItem.kt          # Station list item (favorite toggle, swipe to edit/share/delete)
+│   │   │   ├── StationItem.kt          # Station list item (drag to reorder, swipe to edit/share/delete)
 │   │   │   └── EqualizerBars.kt        # Animated "now playing" bars indicator
 │   │   └── theme/                   # Compose theme (colors, typography)
 │   ├── widget/
@@ -163,7 +169,7 @@ app/src/main/
 │   └── util/
 │       ├── EmojiGenerator.kt
 │       ├── StreamValidator.kt       # HEAD/GET reachability probe before a station is saved
-│       ├── AppShortcuts.kt          # Long-press launcher icon: last-played/favorite station shortcuts
+│       ├── AppShortcuts.kt          # Long-press launcher icon: last-played/first-in-list station shortcuts
 │       ├── StationNavigator.kt      # Pure next/prev station selection for the widget's skip buttons
 │       └── StationShare.kt          # Share JSON backup via Intent.ACTION_SEND (FileProvider)
 └── res/
@@ -194,20 +200,23 @@ Main project dependencies:
 The project includes unit tests for:
 
 - **RadioStation** - data model equality and properties
-- **RadioStationDao** - CRUD and ordering (favorites-first, in-memory database), unique constraint violations
-- **AppDatabaseMigrationTest** - migration 2→3 preserves data, dedupes pre-existing collisions, enforces new unique constraints; migration 3→4 adds `isFavorite` defaulting to false
-- **RadioStationRepositoryBackupTest** - JSON export/import (incl. `isFavorite`, with old-backup fallback), duplicate skipping, round-trip fidelity
+- **RadioStationDao** - CRUD and ordering (manual `sortOrder`, in-memory database), unique constraint violations
+- **AppDatabaseMigrationTest** - migration 2→3 preserves data, dedupes pre-existing collisions, enforces new unique constraints; migration 7→8 replaces `isFavorite` with `sortOrder` derived from the old favorites-first order
+- **RadioStationRepositoryBackupTest** - JSON export/import (with old-backup fallback), duplicate skipping, round-trip fidelity
 - **StationBackupJson** - single-station and bulk JSON serialization shape
-- **MainViewModel** - current playing station, search, delete, favorite toggling/reordering
+- **MainViewModel** - current playing station, search, delete, drag-to-reorder
 - **UrlValidator** - URL validation (AddStationActivity)
 - **StreamRecorder** / **TimeshiftController** / **StreamValidator** / **RadioBrowserApi** - recording, buffering, seek state, reachability probing, directory search parsing (via a local `MockWebServer`)
 - **StationShare** - share-sheet intent (`ACTION_SEND`), file name sanitization, backup file contents
 - **RadioPlaybackServiceLogicTest** - HLS detection, retry backoff, retryable-error classification
 - **DiscoverStationsViewModel** - debounced search, duplicate/name-collision handling on add
-- **AppShortcuts** - dynamic shortcut set for last-played/favorite station, dedup when they're the same station
-- **AlarmScheduler** - next-trigger-time math (today vs. tomorrow, including the exactly-now edge case)
-- **AlarmStateStore** - save/restore round-trip, including a saved-but-disabled alarm
-- **AlarmReceiver** - starts playback with the saved station's extras when enabled, no-ops when disabled or unset
+- **AppShortcuts** - dynamic shortcut set for last-played/first-in-list station, dedup when they're the same station
+- **AlarmRepository** - alarm CRUD, one-time legacy SharedPreferences->Room import (and its idempotency)
+- **AlarmScheduler** - next-trigger-time math (today vs. tomorrow, including the exactly-now edge case), per-alarm-id scheduling not clobbering other alarms
+- **AlarmStateStore** - save/restore round-trip, including a saved-but-disabled alarm, and `clear()`
+- **AlarmReceiver** - starts playback for the alarm identified by id, no-ops when disabled/unknown/unset, falls back to migrating a still-pending legacy alarm when no id is present
+- **BootReceiver** - reschedules every enabled alarm after a reboot, including a still-pending legacy alarm
+- **AlarmListViewModel** / **AlarmEditViewModel** - list load/enable/delete, form load/save/delete, legacy alarm migration event
 
 Screenshot (pixel-diff) tests use [Roborazzi](https://github.com/takahirom/roborazzi) over Robolectric's native-graphics mode, catching visual regressions (clipped shadows, invisible text) that a plain unit test can't. Reference images live in `app/src/test/screenshots/` and are committed to the repo.
 
@@ -282,8 +291,8 @@ The application requests the following permissions:
 - `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` - for background playback
 - `POST_NOTIFICATIONS` - for media notifications (Android 13+)
 - `WAKE_LOCK` - keeps the network alive while playing with the screen off (background listening is the app's whole point)
-- `RECEIVE_BOOT_COMPLETED` - reschedules the wake-up alarm after a reboot (AlarmManager alarms are cleared on reboot)
-- `SCHEDULE_EXACT_ALARM` - needed for the wake-up alarm to fire at the exact time you set; on some devices you may need to grant "Alarms & reminders" access from Settings (the app will prompt you if so)
+- `RECEIVE_BOOT_COMPLETED` - reschedules every enabled wake-up alarm after a reboot (AlarmManager alarms are cleared on reboot)
+- `SCHEDULE_EXACT_ALARM` - needed for wake-up alarms to fire at the exact time you set; on some devices you may need to grant "Alarms & reminders" access from Settings (the app will prompt you if so)
 - `ACCESS_COARSE_LOCATION` - only requested when you use Discover's "Near me" search; your location is sent for that one search and never stored
 
 ## 📄 License

@@ -7,9 +7,11 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [RadioStation::class], version = 7, exportSchema = true)
+@Database(entities = [RadioStation::class, WakeAlarm::class], version = 9, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun radioStationDao(): RadioStationDao
+
+    abstract fun wakeAlarmDao(): WakeAlarmDao
 
     companion object {
         /**
@@ -86,6 +88,70 @@ abstract class AppDatabase : RoomDatabase() {
                 }
             }
 
+        /**
+         * Replaces the favorites/pinning flag with a manual drag-to-reorder position: `sortOrder`
+         * (ascending). Unlike the ADD-COLUMN-only migrations above, dropping `isFavorite` needs a
+         * full table rebuild — SQLite's `ALTER TABLE ... DROP COLUMN` support depends on the
+         * bundled SQLite version, which isn't guaranteed across every API level down to minSdk 29,
+         * so this follows the standard "create new table, copy data, drop old, rename" pattern
+         * instead. Existing rows get `sortOrder` backfilled from their *current* effective order
+         * (`isFavorite DESC, id ASC`, the exact `ORDER BY` `getAllStations()` used to use) via a
+         * correlated-subquery rank, so upgrading doesn't visibly reshuffle anyone's list — it just
+         * freezes the old favorites-first order as the new starting manual order.
+         */
+        val MIGRATION_7_8 =
+            object : Migration(7, 8) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE radio_stations_new (" +
+                            "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "`name` TEXT NOT NULL, `streamUrl` TEXT NOT NULL, `customIcon` TEXT, " +
+                            "`sortOrder` INTEGER NOT NULL DEFAULT 0, `genre` TEXT, " +
+                            "`isHls` INTEGER NOT NULL, `radioBrowserUuid` TEXT)",
+                    )
+                    db.execSQL(
+                        "INSERT INTO radio_stations_new " +
+                            "(id, name, streamUrl, customIcon, sortOrder, genre, isHls, radioBrowserUuid) " +
+                            "SELECT id, name, streamUrl, customIcon, " +
+                            "(SELECT COUNT(*) FROM radio_stations s2 " +
+                            "WHERE (s2.isFavorite > radio_stations.isFavorite) " +
+                            "OR (s2.isFavorite = radio_stations.isFavorite AND s2.id <= radio_stations.id)) - 1, " +
+                            "genre, isHls, radioBrowserUuid " +
+                            "FROM radio_stations",
+                    )
+                    db.execSQL("DROP TABLE radio_stations")
+                    db.execSQL("ALTER TABLE radio_stations_new RENAME TO radio_stations")
+                    db.execSQL(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS `index_radio_stations_name` " +
+                            "ON `radio_stations` (`name`)",
+                    )
+                    db.execSQL(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS `index_radio_stations_streamUrl` " +
+                            "ON `radio_stations` (`streamUrl`)",
+                    )
+                }
+            }
+
+        /**
+         * Adds the `wake_alarms` table backing multiple wake-up alarms (see
+         * [com.urlradiodroid.ui.AlarmListScreen]/[com.urlradiodroid.ui.AlarmEditScreen]), replacing
+         * the single SharedPreferences-backed alarm. Existing users' one alarm isn't migrated here —
+         * that needs [com.urlradiodroid.ui.playback.AlarmStateStore], which a schema migration has no
+         * access to — [AlarmRepository.migrateLegacyAlarmIfNeeded] does that import separately, on
+         * first alarm-list load / boot / alarm firing after upgrading.
+         */
+        val MIGRATION_8_9 =
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS wake_alarms (" +
+                            "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "`enabled` INTEGER NOT NULL, `hour` INTEGER NOT NULL, `minute` INTEGER NOT NULL, " +
+                            "`stationName` TEXT, `streamUrl` TEXT)",
+                    )
+                }
+            }
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -103,6 +169,8 @@ abstract class AppDatabase : RoomDatabase() {
                             MIGRATION_4_5,
                             MIGRATION_5_6,
                             MIGRATION_6_7,
+                            MIGRATION_7_8,
+                            MIGRATION_8_9,
                         )
                         // Safety net only for schema jumps with no explicit migration
                         // (e.g. pre-1.0 installs skipping straight to a future version).

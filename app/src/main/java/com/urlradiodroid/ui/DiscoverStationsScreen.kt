@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -388,6 +389,7 @@ private fun DiscoverResultsContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.sm),
                 verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 items(items = uiState.results, key = { it.uuid.ifBlank { it.url } }) { station ->
                     DiscoverResultCard(
@@ -423,7 +425,7 @@ private fun DiscoverResultCard(
 
     Card(
         modifier =
-            Modifier.fillMaxWidth().border(
+            Modifier.fillMaxWidth().widthIn(max = 600.dp).border(
                 width = 1.dp,
                 color = card_border,
                 shape = MaterialTheme.shapes.large,

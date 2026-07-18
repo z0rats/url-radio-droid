@@ -25,8 +25,13 @@ data class AddStationUiState(
     val urlErrorRes: Int? = null,
     val isSaving: Boolean = false,
     val isEditing: Boolean = false,
-    /** Carried through unedited from the loaded station (this form has no favorite toggle) so save() doesn't clear it. */
-    val isFavorite: Boolean = false,
+    /**
+     * Carried through unedited from the loaded station (this form has no way to reorder) so
+     * save()'s full-row @Update doesn't reset the station's manual list position back to 0. Only
+     * meaningful when editing — a new station's sortOrder is always assigned by
+     * RadioStationRepository.insertStation() regardless of this field's value.
+     */
+    val sortOrder: Int = 0,
     /** Carried through unedited from the loaded station (this form has no HLS toggle) so save() doesn't clear it. */
     val isHls: Boolean = false,
     /** Carried through unedited from the loaded station (this form has no way to set it) so save() doesn't clear it. */
@@ -68,7 +73,7 @@ class AddStationViewModel(
                             url = station.streamUrl,
                             customIcon = station.customIcon,
                             genre = station.genre.orEmpty(),
-                            isFavorite = station.isFavorite,
+                            sortOrder = station.sortOrder,
                             isHls = station.isHls,
                             radioBrowserUuid = station.radioBrowserUuid,
                         )
@@ -159,7 +164,7 @@ class AddStationViewModel(
                                     name = nameTrimmed,
                                     streamUrl = urlTrimmed,
                                     customIcon = finalIcon,
-                                    isFavorite = _uiState.value.isFavorite,
+                                    sortOrder = _uiState.value.sortOrder,
                                     genre = finalGenre,
                                     isHls = _uiState.value.isHls,
                                     radioBrowserUuid = _uiState.value.radioBrowserUuid,

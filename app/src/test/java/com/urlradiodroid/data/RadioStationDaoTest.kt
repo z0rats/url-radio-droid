@@ -7,6 +7,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -89,30 +90,38 @@ class RadioStationDaoTest {
         }
 
     @Test
-    fun `test getAllStations orders favorites before non-favorites, each by id ascending`() =
+    fun `test getAllStations orders by sortOrder ascending after updateSortOrder`() =
         runTest {
             val id1 = dao.insertStation(RadioStation(name = "First", streamUrl = "http://example.com/1"))
             val id2 = dao.insertStation(RadioStation(name = "Second", streamUrl = "http://example.com/2"))
             val id3 = dao.insertStation(RadioStation(name = "Third", streamUrl = "http://example.com/3"))
-            dao.setFavorite(id3, true)
 
+            dao.updateSortOrder(listOf(id3, id1, id2))
             val stations = dao.getAllStations()
 
             assertEquals(listOf(id3, id1, id2), stations.map { it.id })
-            assertEquals(true, stations[0].isFavorite)
+            assertEquals(listOf(0, 1, 2), stations.map { it.sortOrder })
         }
 
     @Test
-    fun `test setFavorite toggles isFavorite`() =
+    fun `test setSortOrder updates a single station's position`() =
         runTest {
             val id = dao.insertStation(RadioStation(name = "Station", streamUrl = "http://example.com/s"))
-            assertEquals(false, dao.getStationById(id)?.isFavorite)
+            assertEquals(0, dao.getStationById(id)?.sortOrder)
 
-            dao.setFavorite(id, true)
-            assertEquals(true, dao.getStationById(id)?.isFavorite)
+            dao.setSortOrder(id, 5)
+            assertEquals(5, dao.getStationById(id)?.sortOrder)
+        }
 
-            dao.setFavorite(id, false)
-            assertEquals(false, dao.getStationById(id)?.isFavorite)
+    @Test
+    fun `test getMaxSortOrder returns -1 when empty and the highest value otherwise`() =
+        runTest {
+            assertEquals(-1, dao.getMaxSortOrder())
+
+            val id = dao.insertStation(RadioStation(name = "A", streamUrl = "http://example.com/a"))
+            dao.setSortOrder(id, 3)
+
+            assertEquals(3, dao.getMaxSortOrder())
         }
 
     @Test
@@ -242,7 +251,7 @@ class RadioStationDaoTest {
 
             val id = dao.insertStation(station)
 
-            assert(id > 0)
+            assertTrue(id > 0)
             val retrieved = dao.getStationById(id)
             assertEquals(id, retrieved?.id)
         }

@@ -246,50 +246,57 @@ class MainViewModelTest {
         }
 
     @Test
-    fun `toggleFavorite pins a station and reorders it to the top`() =
+    fun `moveStation reorders the in-memory list without touching the DB`() =
         runTest {
             val viewModel = createViewModel(testScheduler)
             advanceUntilIdle()
             database.radioStationDao().insertStation(RadioStation(name = "First", streamUrl = "http://example.com/1"))
-            val second =
-                database.radioStationDao().insertStation(
-                    RadioStation(name = "Second", streamUrl = "http://example.com/2"),
-                )
+            database.radioStationDao().insertStation(RadioStation(name = "Second", streamUrl = "http://example.com/2"))
+            database.radioStationDao().insertStation(RadioStation(name = "Third", streamUrl = "http://example.com/3"))
             viewModel.loadStations()
-            waitForStationsCount(viewModel, 2)
+            waitForStationsCount(viewModel, 3)
 
-            viewModel.toggleFavorite(viewModel.stations.value.first { it.id == second })
-            waitUntil {
-                viewModel.stations.value
-                    .firstOrNull()
-                    ?.isFavorite == true
-            }
+            viewModel.moveStation(2, 0)
 
-            val list = viewModel.stations.value
-            assertEquals("Second", list[0].name)
+            assertEquals(
+                listOf("Third", "First", "Second"),
+                viewModel.stations.value.map { it.name },
+            )
+            // Not persisted yet - the DB still reflects insertion order.
+            assertEquals(
+                listOf("First", "Second", "Third"),
+                database.radioStationDao().getAllStations().map { it.name },
+            )
         }
 
     @Test
-    fun `toggleFavorite on an already-favorite station unpins it`() =
+    fun `persistStationOrder writes the current in-memory order's sortOrder to the DB`() =
         runTest {
             val viewModel = createViewModel(testScheduler)
             advanceUntilIdle()
-            val id =
-                database.radioStationDao().insertStation(
-                    RadioStation(name = "Station", streamUrl = "http://example.com/s"),
-                )
-            database.radioStationDao().setFavorite(id, true)
+            database.radioStationDao().insertStation(RadioStation(name = "First", streamUrl = "http://example.com/1"))
+            database.radioStationDao().insertStation(RadioStation(name = "Second", streamUrl = "http://example.com/2"))
             viewModel.loadStations()
-            waitForStationsCount(viewModel, 1)
+            waitForStationsCount(viewModel, 2)
 
-            viewModel.toggleFavorite(viewModel.stations.value[0])
-            waitUntil {
-                viewModel.stations.value
-                    .firstOrNull()
-                    ?.isFavorite == false
+            viewModel.moveStation(1, 0)
+            viewModel.persistStationOrder()
+
+            // persistStationOrder() launches the write via viewModelScope on the virtual test
+            // dispatcher, but Room's own suspend DAO methods hop onto a real background executor
+            // for the actual write - advanceUntilIdle() alone can't wait for that, so poll with
+            // real time between attempts. Calling the suspend read directly here (not from inside
+            // a synchronous poll lambda, unlike waitUntil/waitForStationsCount above) is safe -
+            // see CLAUDE.md's deadlock warning on that specific anti-pattern.
+            var names = emptyList<String>()
+            val deadline = System.currentTimeMillis() + 5000
+            while (names != listOf("Second", "First") && System.currentTimeMillis() < deadline) {
+                advanceUntilIdle()
+                names = database.radioStationDao().getAllStations().map { it.name }
+                if (names != listOf("Second", "First")) Thread.sleep(20)
             }
 
-            assertEquals(false, viewModel.stations.value[0].isFavorite)
+            assertEquals(listOf("Second", "First"), names)
         }
 
     @Test

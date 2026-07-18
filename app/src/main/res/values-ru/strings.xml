@@ -10,6 +10,8 @@
     <string name="stop">Стоп</string>
     <string name="volume">Громкость</string>
     <string name="no_stations">Нет сохранённых станций</string>
+    <string name="no_search_results">Ничего не найдено по запросу</string>
+    <string name="no_station_selected">Выберите станцию, чтобы увидеть, что играет</string>
     <string name="error_invalid_url">Неверный URL</string>
     <string name="error_network">Ошибка сети</string>
     <string name="error_playback">Ошибка воспроизведения</string>
@@ -30,8 +32,7 @@
     <string name="station_deleted">Станция удалена</string>
     <string name="undo">Отменить</string>
     <string name="search_stations">Поиск станций</string>
-    <string name="pin_station">Закрепить сверху</string>
-    <string name="unpin_station">Открепить</string>
+    <string name="reorder_station">Перетащите для изменения порядка</string>
     <string name="station_icon">Значок станции</string>
     <string name="choose_emoji">Выбрать эмодзи</string>
     <string name="upload_image">Загрузить изображение</string>
@@ -57,7 +58,7 @@
     <string name="share_station">Поделиться станцией</string>
     <string name="import_stations">Импорт станций</string>
     <string name="export_error">Не удалось экспортировать</string>
-    <string name="import_error">Не удалось импортировать: файл не является корректной резервной копией станций</string>
+    <string name="import_error">Не удалось импортировать: неподдерживаемый или недействительный файл (ожидается резервная копия станций, OPML, M3U или PLS)</string>
     <string name="import_result">Импортировано: %1$d, пропущено дубликатов: %2$d</string>
     <string name="copy_track_title">Скопировать название трека</string>
     <string name="track_title_copied">Название трека скопировано</string>
@@ -84,8 +85,9 @@
     <string name="discover_ssl_warning">HTTPS-сертификат этой станции не прошёл проверку — она может воспроизводиться нестабильно</string>
     <string name="visit_website">Открыть сайт</string>
     <string name="shortcut_last_played">Продолжить: %1$s</string>
-    <string name="shortcut_favorite">Избранное: %1$s</string>
-    <string name="alarm">Будильник</string>
+    <string name="shortcut_first_station">Быстрый запуск: %1$s</string>
+    <string name="alarms">Будильники</string>
+    <string name="alarm_enabled">Включён</string>
     <string name="alarm_time">Время пробуждения</string>
     <string name="alarm_station">Станция</string>
     <string name="alarm_select_station">Выберите станцию</string>
@@ -93,6 +95,12 @@
     <string name="alarm_enabled_toast">Будильник установлен на %1$s</string>
     <string name="alarm_disabled_toast">Будильник выключен</string>
     <string name="alarm_permission_needed">Разрешите приложению «Будильники и напоминания», чтобы установить будильник</string>
+    <string name="alarm_add">Добавить будильник</string>
+    <string name="alarm_delete">Удалить будильник</string>
+    <string name="alarm_delete_confirm">Удалить этот будильник?</string>
+    <string name="alarm_none">Пока нет будильников. Нажмите +, чтобы добавить.</string>
+    <string name="alarm_new_title">Новый будильник</string>
+    <string name="alarm_edit_title">Изменить будильник</string>
     <string name="settings">Настройки</string>
     <string name="settings_metered_warning">Предупреждение о мобильном интернете</string>
     <string name="settings_metered_warning_description">Спрашивать подтверждение перед воспроизведением при лимитном соединении</string>

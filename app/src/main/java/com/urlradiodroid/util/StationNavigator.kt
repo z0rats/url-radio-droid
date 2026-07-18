@@ -6,7 +6,7 @@ import com.urlradiodroid.data.RadioStation
  * Pure next/prev station selection for the home screen widget's skip buttons, kept independent of
  * any Android framework type so it's plain-JUnit testable (see `AlarmScheduler.nextTriggerMillis`
  * for the same pattern elsewhere in this codebase). Operates on whatever ordering [stations] is
- * already in (the DB's `isFavorite DESC, id ASC`, same as the station list and the browse tree).
+ * already in (the DB's `sortOrder ASC, id ASC`, same as the station list and the browse tree).
  */
 object StationNavigator {
     /**

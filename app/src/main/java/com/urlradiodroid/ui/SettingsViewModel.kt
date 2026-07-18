@@ -11,8 +11,11 @@ class SettingsViewModel(
     /** Plain suspend function (not launched internally) so callers get the JSON back to write to a file. */
     suspend fun exportStationsJson(): String = repository.exportStationsToJson()
 
-    /** Plain suspend function so callers get the [ImportResult] back to show to the user. */
-    suspend fun importStationsJson(json: String): ImportResult = repository.importStationsFromJson(json)
+    /**
+     * Plain suspend function so callers get the [ImportResult] back to show to the user. Accepts a
+     * JSON stations backup or an OPML/M3U/PLS playlist — see [RadioStationRepository.importStations].
+     */
+    suspend fun importStations(content: String): ImportResult = repository.importStations(content)
 
     companion object {
         fun provideFactory(repository: RadioStationRepository): ViewModelProvider.Factory =
