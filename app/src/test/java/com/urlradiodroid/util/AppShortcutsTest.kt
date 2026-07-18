@@ -60,8 +60,8 @@ class AppShortcutsTest {
             context,
             stations =
                 listOf(
-                    station(name = "Radio One", url = "https://stream.example.com/one"),
                     station(name = "Jazz FM", url = "https://stream.example.com/jazz"),
+                    station(name = "Radio One", url = "https://stream.example.com/one"),
                 ),
         )
 
