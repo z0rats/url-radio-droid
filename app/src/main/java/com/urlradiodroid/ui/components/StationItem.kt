@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
@@ -357,16 +356,6 @@ private fun StationCard(
                     )
                 }
             }
-
-            // Purely a visual affordance hinting the list is reorderable — the actual gesture is
-            // bound to the whole card (see StationItem's dragHandleModifier), not this icon
-            // specifically, so it's non-interactive.
-            Icon(
-                imageVector = Icons.Default.DragIndicator,
-                contentDescription = stringResource(R.string.reorder_station),
-                tint = if (isDragging) glass_accent else text_hint,
-                modifier = Modifier.size(24.dp),
-            )
 
             PlayPauseIcon(
                 isPlaying = isPlaying,

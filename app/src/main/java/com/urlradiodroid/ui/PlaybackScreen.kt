@@ -523,7 +523,7 @@ private fun TrackTitleRow(
             color = text_primary.copy(alpha = 0.8f),
             textAlign = TextAlign.Center,
             maxLines = 1,
-            modifier = Modifier.weight(1f, fill = false).basicMarquee(),
+            modifier = Modifier.weight(1f, fill = false).basicMarquee(iterations = Int.MAX_VALUE),
         )
         IconButton(
             onClick = {

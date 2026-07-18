@@ -32,7 +32,6 @@
     <string name="station_deleted">Station deleted</string>
     <string name="undo">Undo</string>
     <string name="search_stations">Search stations</string>
-    <string name="reorder_station">Drag to reorder</string>
     <string name="station_icon">Station Icon</string>
     <string name="choose_emoji">Choose Emoji</string>
     <string name="upload_image">Upload Image</string>

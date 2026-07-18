@@ -32,7 +32,6 @@
     <string name="station_deleted">Emisora eliminada</string>
     <string name="undo">Deshacer</string>
     <string name="search_stations">Buscar emisoras</string>
-    <string name="reorder_station">Arrastra para reordenar</string>
     <string name="station_icon">Icono de la emisora</string>
     <string name="choose_emoji">Elegir emoji</string>
     <string name="upload_image">Subir imagen</string>

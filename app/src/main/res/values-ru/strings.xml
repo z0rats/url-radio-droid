@@ -32,7 +32,6 @@
     <string name="station_deleted">Станция удалена</string>
     <string name="undo">Отменить</string>
     <string name="search_stations">Поиск станций</string>
-    <string name="reorder_station">Перетащите для изменения порядка</string>
     <string name="station_icon">Значок станции</string>
     <string name="choose_emoji">Выбрать эмодзи</string>
     <string name="upload_image">Загрузить изображение</string>

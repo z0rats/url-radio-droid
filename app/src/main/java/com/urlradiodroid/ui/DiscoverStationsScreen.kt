@@ -454,7 +454,7 @@ private fun DiscoverResultCard(
                     style = MaterialTheme.typography.titleMedium,
                     color = text_primary,
                     maxLines = 1,
-                    modifier = Modifier.basicMarquee(),
+                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE),
                 )
                 Text(
                     text = stationSubtitle(station),

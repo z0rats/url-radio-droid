@@ -32,7 +32,6 @@
     <string name="station_deleted">电台已删除</string>
     <string name="undo">撤销</string>
     <string name="search_stations">搜索电台</string>
-    <string name="reorder_station">拖动以重新排序</string>
     <string name="station_icon">电台图标</string>
     <string name="choose_emoji">选择表情符号</string>
     <string name="upload_image">上传图片</string>

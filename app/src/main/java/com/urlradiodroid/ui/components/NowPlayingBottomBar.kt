@@ -327,7 +327,7 @@ private fun MiniPlayerCardFull(
                             style = MaterialTheme.typography.bodySmall,
                             color = text_hint,
                             maxLines = 1,
-                            modifier = Modifier.basicMarquee(),
+                            modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE),
                         )
                     }
                 }
