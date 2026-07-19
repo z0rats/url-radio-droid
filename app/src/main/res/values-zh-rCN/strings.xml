@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">URL Radio Droid</string>
+    <string name="app_name">Freqcast</string>
     <string name="add_station">添加</string>
     <string name="station_name">电台名称</string>
     <string name="stream_url">流媒体地址</string>

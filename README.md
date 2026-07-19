@@ -1,6 +1,6 @@
 # 📻 Freqcast — Internet Radio
 
-[![codecov](https://codecov.io/gh/z0rats/url-radio-droid/branch/master/graph/badge.svg)](https://codecov.io/gh/z0rats/url-radio-droid)
+[![codecov](https://codecov.io/gh/z0rats/freqcast/branch/master/graph/badge.svg)](https://codecov.io/gh/z0rats/freqcast)
 
 A minimalist Android application for listening to internet radio via direct streaming links (HTTP/HTTPS).
 
@@ -69,7 +69,7 @@ To publish a new release:
    `git tag v1.0`
 2. Push the tag:  
    `git push origin v1.0`
-3. On GitHub, open **Actions** — the **Release** workflow will run, build the APK, and create a release with the attached file `url-radiodroid-1.0.apk`.
+3. On GitHub, open **Actions** — the **Release** workflow will run, build the APK, and create a release with the attached file `freqcast-1.0.apk`.
 
 Release APKs are built as a proper release build (R8 minification + resource shrinking enabled) and signed with a dedicated release keystore. The keystore itself isn't checked into the repo — it's stored base64-encoded in the `RELEASE_KEYSTORE_BASE64` GitHub Secret, decoded by the `Release` workflow at build time, alongside `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, and `RELEASE_KEY_PASSWORD`.
 
@@ -125,7 +125,7 @@ Station names and stream URLs are unique at the database level (not just checked
 
 ```
 app/src/main/
-├── java/com/urlradiodroid/
+├── java/com/freqcast/
 │   ├── data/
 │   │   ├── RadioStation.kt          # Entity for radio station
 │   │   ├── RadioStationDao.kt       # DAO for database operations
@@ -258,7 +258,7 @@ After an intentional visual change, re-record the baseline and review the diff b
 
 ### Coverage
 
-Unit test coverage is measured with [Kover](https://github.com/Kotlin/kotlinx-kover) and uploaded to [Codecov](https://codecov.io/gh/z0rats/url-radio-droid) on every push/PR to `master`/`main`. To generate a local HTML report:
+Unit test coverage is measured with [Kover](https://github.com/Kotlin/kotlinx-kover) and uploaded to [Codecov](https://codecov.io/gh/z0rats/freqcast) on every push/PR to `master`/`main`. To generate a local HTML report:
 
 ```bash
 ./gradlew koverHtmlReportDebug

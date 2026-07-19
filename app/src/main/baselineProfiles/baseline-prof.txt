@@ -4,5 +4,5 @@
 # cold-start path (MainActivity → MainScreen/MainViewModel → Room/repository → theme) instead of
 # leaving it to interpret/JIT on first launch. Wildcard rules require AGP's baseline profile
 # wildcard support (available since AGP 8.1; this project is on 9.2.1).
-HSPLcom/urlradiodroid/**;->**(**)**
-Lcom/urlradiodroid/**;
+HSPLcom/freqcast/**;->**(**)**
+Lcom/freqcast/**;

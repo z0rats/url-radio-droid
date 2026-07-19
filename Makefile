@@ -49,7 +49,7 @@ install: build
 	adb install -r $(APK_DEBUG)
 
 run: install
-	adb shell am start -n com.urlradiodroid/.ui.MainActivity
+	adb shell am start -n com.freqcast/.ui.MainActivity
 
 clean:
 	$(GRADLE) clean

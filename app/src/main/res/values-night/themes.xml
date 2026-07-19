@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Material Design 3 Dark Theme -->
-    <style name="Theme.URLRadioDroid" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.Freqcast" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary colors -->
         <item name="colorPrimary">@color/md_theme_dark_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_onPrimary</item>

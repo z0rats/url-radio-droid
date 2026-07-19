@@ -17,5 +17,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "URL Radio Droid"
+rootProject.name = "Freqcast"
 include ':app'

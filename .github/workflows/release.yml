@@ -73,13 +73,13 @@ jobs:
       - name: Rename APK with version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
-          cp app/build/outputs/apk/release/app-release.apk "url-radio-droid-${VERSION}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "freqcast-${VERSION}.apk"
           echo "APK_VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: url-radio-droid-${{ env.APK_VERSION }}.apk
+          files: freqcast-${{ env.APK_VERSION }}.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

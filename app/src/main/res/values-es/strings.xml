@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">URL Radio Droid</string>
+    <string name="app_name">Freqcast</string>
     <string name="add_station">Añadir</string>
     <string name="station_name">Nombre de la emisora</string>
     <string name="stream_url">URL del flujo</string>

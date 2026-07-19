@@ -8,15 +8,15 @@ plugins {
 }
 
 android {
-    namespace 'com.urlradiodroid'
+    namespace 'com.freqcast'
     compileSdk 37
 
     defaultConfig {
-        applicationId "com.urlradiodroid"
+        applicationId "com.freqcast"
         minSdk 29
         targetSdk 37
-        versionCode 7
-        versionName "2.4.1"
+        versionCode 8
+        versionName "3.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -70,7 +70,7 @@ kover {
     reports {
         filters {
             excludes {
-                classes("com.urlradiodroid.BuildConfig", "com.urlradiodroid.R", "com.urlradiodroid.R\$*")
+                classes("com.freqcast.BuildConfig", "com.freqcast.R", "com.freqcast.R\$*")
             }
         }
         variant("debug") {
