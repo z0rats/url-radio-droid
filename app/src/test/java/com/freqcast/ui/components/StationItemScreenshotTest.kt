@@ -11,6 +11,7 @@ import com.freqcast.data.RadioStation
 import com.freqcast.ui.theme.FreqcastTheme
 import com.freqcast.ui.theme.Spacing
 import com.freqcast.ui.theme.background_gradient_start
+import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +28,14 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29])
 class StationItemScreenshotTest {
+    // Tolerates the antialiasing drift between recording and verification environments
+    // (e.g. a Compose-compiler/Roborazzi version bump) without masking a real visual
+    // regression - see CLAUDE.md's Testing section.
+    private val roborazziOptions =
+        RoborazziOptions(
+            compareOptions = RoborazziOptions.CompareOptions(changeThreshold = 0.01f),
+        )
+
     private val station =
         RadioStation(
             id = 1,
@@ -51,7 +60,7 @@ class StationItemScreenshotTest {
 
     @Test
     fun inactiveStationCard() {
-        captureRoboImage {
+        captureRoboImage(roborazziOptions = roborazziOptions) {
             PreviewBackground {
                 StationItem(
                     station = station,
@@ -68,7 +77,7 @@ class StationItemScreenshotTest {
 
     @Test
     fun activePlayingStationCardShowsEqualizerAndBorder() {
-        captureRoboImage {
+        captureRoboImage(roborazziOptions = roborazziOptions) {
             PreviewBackground {
                 StationItem(
                     station = station,
@@ -86,7 +95,7 @@ class StationItemScreenshotTest {
 
     @Test
     fun draggingStationCardShowsAccentBorderAndElevation() {
-        captureRoboImage {
+        captureRoboImage(roborazziOptions = roborazziOptions) {
             PreviewBackground {
                 StationItem(
                     station = station,
