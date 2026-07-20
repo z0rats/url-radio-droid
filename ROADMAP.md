@@ -4,9 +4,6 @@
 
 - ~~**Localization (i18n)**~~ — done: Russian, Spanish and Simplified Chinese added (`res/values-ru/`, `res/values-es/`, `res/values-zh-rCN/`). Adding another language is just a new `values-<lang>/strings.xml` with the same keys — see CLAUDE.md's Localization section for the process to keep them in sync going forward.
 
-- **Add station by pasting a website link** — `AddStationScreen` currently requires the actual stream URL, but a non-technical user usually only has the station's homepage. Two-stage resolution: first query `RadioBrowserApi` by the homepage field (the station may already be cataloged there with a known stream URL — reuses the existing directory client instead of scraping); if that misses, fall back to fetching the page HTML and pulling a stream URL from `<audio>`/`<source>` tags, linked `.pls`/`.m3u` playlist files (small text format, just needs parsing for the real URL inside), or common Icecast/Shoutcast/AzuraCast conventions (`:8000/`, `/stream`, `.mp3`/`.aac`/`.m3u8` patterns in the raw HTML/JS) as a last resort. Whatever URL comes out of either path still goes through the existing `StreamValidator` reachability probe before save, same as manual entry.
-
-- **Empty state for "no search results"** — `MainScreen`'s search only renders an empty state when the *whole library* is empty (`stations.isEmpty() && searchQuery.isBlank()`, `MainScreen.kt:620`, the 📻-icon-plus-`no_stations` layout); if a non-blank `searchQuery` filters the list down to zero matches, the `else` branch just renders a bare empty `LazyColumn` with no message. Needs its own branch (`stations.isEmpty() && searchQuery.isNotBlank()`) reusing the same centered layout with a distinct icon/string (e.g. 🔍 + new `no_search_results`) so "you have no stations yet" and "nothing matches this search" don't share copy. `DiscoverStationsScreen` already has the right pattern for its own empty-results case (`discover_empty_results`) to crib from.
 
 ## Technical
 
