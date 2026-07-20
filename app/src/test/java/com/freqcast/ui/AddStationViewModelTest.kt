@@ -1,9 +1,11 @@
 package com.freqcast.ui
 
 import androidx.room.Room
+import com.freqcast.R
 import com.freqcast.data.AppDatabase
 import com.freqcast.data.RadioStation
 import com.freqcast.data.RadioStationRepository
+import com.freqcast.data.StationUrlResolver
 import com.freqcast.util.StreamValidator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,9 +68,16 @@ class AddStationViewModelTest {
     private fun createViewModel(
         scheduler: TestCoroutineScheduler,
         editingStationId: Long? = null,
+        stationUrlResolver: StationUrlResolver? = null,
     ): AddStationViewModel {
         Dispatchers.setMain(StandardTestDispatcher(scheduler))
-        return AddStationViewModel(repository, editingStationId, StreamValidator(client = OkHttpClient()))
+        val streamValidator = StreamValidator(client = OkHttpClient())
+        return AddStationViewModel(
+            repository,
+            editingStationId,
+            streamValidator,
+            stationUrlResolver ?: StationUrlResolver(streamValidator = streamValidator),
+        )
     }
 
     private suspend fun TestScope.awaitTrue(
@@ -156,6 +165,71 @@ class AddStationViewModelTest {
             awaitTrue { viewModel.uiState.value.isSaving }
             awaitTrue { !viewModel.uiState.value.isSaving }
             assertEquals("rock", database.radioStationDao().getAllStations()[0].genre)
+        }
+
+    @Test
+    fun `pasting a station homepage resolves and saves the stream url found on the page`() =
+        runTest {
+            // A dedicated server, rather than the class's shared `server` (which setup() pre-seeds
+            // with one always-200 response for the simple direct-stream-url tests), so this test
+            // controls its exact request/response sequence: HEAD on the homepage (content-type
+            // check), GET on the homepage (the actual scrape), then HEAD on the stream it finds.
+            val homepageServer = MockWebServer()
+            homepageServer.start()
+            try {
+                homepageServer.enqueue(MockResponse().setHeader("Content-Type", "text/html"))
+                homepageServer.enqueue(
+                    MockResponse()
+                        .setHeader("Content-Type", "text/html")
+                        .setBody(
+                            """<html><body><audio src="${homepageServer.url("/stream.mp3")}"></audio></body></html>""",
+                        ),
+                )
+                homepageServer.enqueue(MockResponse().setResponseCode(200))
+
+                val viewModel = createViewModel(testScheduler)
+                viewModel.onNameChange("New FM")
+                viewModel.onUrlChange(homepageServer.url("/").toString())
+
+                viewModel.save()
+
+                awaitTrue { viewModel.uiState.value.isSaving }
+                awaitTrue { !viewModel.uiState.value.isSaving }
+                assertEquals(homepageServer.url("/stream.mp3").toString(), viewModel.uiState.value.url)
+                assertEquals(
+                    homepageServer.url("/stream.mp3").toString(),
+                    database.radioStationDao().getAllStations()[0].streamUrl,
+                )
+            } finally {
+                homepageServer.shutdown()
+            }
+        }
+
+    @Test
+    fun `pasting a website with no discoverable stream shows the unreachable error`() =
+        runTest {
+            val homepageServer = MockWebServer()
+            homepageServer.start()
+            try {
+                homepageServer.enqueue(MockResponse().setHeader("Content-Type", "text/html"))
+                homepageServer.enqueue(
+                    MockResponse()
+                        .setHeader("Content-Type", "text/html")
+                        .setBody("<html><body><p>Just a website, no player here.</p></body></html>"),
+                )
+
+                val viewModel = createViewModel(testScheduler)
+                viewModel.onNameChange("New FM")
+                viewModel.onUrlChange(homepageServer.url("/").toString())
+
+                viewModel.save()
+
+                awaitTrue { viewModel.uiState.value.isSaving }
+                awaitTrue { !viewModel.uiState.value.isSaving }
+                assertEquals(R.string.error_stream_unreachable, viewModel.uiState.value.urlErrorRes)
+            } finally {
+                homepageServer.shutdown()
+            }
         }
 
     @Test

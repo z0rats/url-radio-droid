@@ -13,7 +13,7 @@ A minimalist Android app for listening to internet radio streams (HTTP/HTTPS, in
 ## ✨ Features
 
 - 🔎 **Discover stations** — search the [Radio Browser](https://api.radio-browser.info/) directory by name, genre, country, language, or "near me" 📍, and add results straight to your library (with icon, genre, and HLS flag auto-filled)
-- ➕ **Manual add** — enter a name and stream URL, validated with a live reachability check before saving
+- ➕ **Add any station by pasting its website** — no need to dig up the raw stream URL: paste a station's homepage and the app finds the playable stream for you (checks the Radio Browser directory first, then falls back to scanning the page itself), with a live reachability check before saving. A direct stream URL still works too, exactly as before
 - 📜 Station list with search, drag-to-reorder ✋, swipe to edit/share/delete (with undo ↩️), and custom emoji/image icons 🖼️
 - 🔁 **Background playback** via a media notification, with auto-resume after the system kills the app and capped-retry reconnect on network loss
 - ⏪ **Timeshift** — rewind 5s or jump to live for single-URL streams (not for HLS)

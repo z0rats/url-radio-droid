@@ -3,7 +3,7 @@
     <string name="app_name">Freqcast</string>
     <string name="add_station">Añadir</string>
     <string name="station_name">Nombre de la emisora</string>
-    <string name="stream_url">URL del flujo</string>
+    <string name="stream_url">URL del flujo o del sitio web</string>
     <string name="station_genre">Género (opcional)</string>
     <string name="save">Guardar</string>
     <string name="play">Reproducir</string>

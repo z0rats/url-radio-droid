@@ -3,7 +3,7 @@
     <string name="app_name">Freqcast</string>
     <string name="add_station">添加</string>
     <string name="station_name">电台名称</string>
-    <string name="stream_url">流媒体地址</string>
+    <string name="stream_url">流媒体或网站地址</string>
     <string name="station_genre">风格（可选）</string>
     <string name="save">保存</string>
     <string name="play">播放</string>
