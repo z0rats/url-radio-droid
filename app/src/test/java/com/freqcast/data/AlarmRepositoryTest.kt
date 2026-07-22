@@ -27,6 +27,8 @@ class AlarmRepositoryTest {
             Room
                 .inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), AppDatabase::class.java)
                 .allowMainThreadQueries()
+                .setQueryExecutor { it.run() }
+                .setTransactionExecutor { it.run() }
                 .build()
         repository = AlarmRepository(database.wakeAlarmDao())
     }

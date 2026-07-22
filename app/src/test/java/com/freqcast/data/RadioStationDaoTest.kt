@@ -29,6 +29,8 @@ class RadioStationDaoTest {
                     RuntimeEnvironment.getApplication(),
                     AppDatabase::class.java,
                 ).allowMainThreadQueries()
+                .setQueryExecutor { it.run() }
+                .setTransactionExecutor { it.run() }
                 .build()
         dao = database.radioStationDao()
     }

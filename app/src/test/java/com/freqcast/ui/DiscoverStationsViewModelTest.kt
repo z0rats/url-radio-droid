@@ -68,6 +68,12 @@ class DiscoverStationsViewModelTest {
             Room
                 .inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), AppDatabase::class.java)
                 .allowMainThreadQueries()
+                // Room otherwise hops suspend DAO calls onto its own real thread pool, which races
+                // against the virtual test dispatcher (e.g. an init{}-launched load can still be
+                // in flight when tearDown() resets Dispatchers.Main) — running it on the calling
+                // thread keeps every DB call inside the same virtual-time-controlled dispatcher.
+                .setQueryExecutor { it.run() }
+                .setTransactionExecutor { it.run() }
                 .build()
         repository = RadioStationRepository(database.radioStationDao())
         server = MockWebServer()

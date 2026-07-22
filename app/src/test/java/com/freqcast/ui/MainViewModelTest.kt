@@ -41,6 +41,11 @@ class MainViewModelTest {
                     RuntimeEnvironment.getApplication(),
                     AppDatabase::class.java,
                 ).allowMainThreadQueries()
+                // Keeps Room's suspend DAO calls on the calling (virtual test) thread instead of its
+                // own real thread pool, so they can't race the test dispatcher/scheduler — see the
+                // same fix in DiscoverStationsViewModelTest for the failure mode this prevents.
+                .setQueryExecutor { it.run() }
+                .setTransactionExecutor { it.run() }
                 .build()
         repository = RadioStationRepository(database.radioStationDao())
     }

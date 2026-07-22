@@ -29,6 +29,10 @@ class RadioStationRepositoryBackupTest {
                     RuntimeEnvironment.getApplication(),
                     AppDatabase::class.java,
                 ).allowMainThreadQueries()
+                // See DiscoverStationsViewModelTest: keeps Room's suspend DAO calls off its own
+                // real thread pool so they can't race the virtual test dispatcher.
+                .setQueryExecutor { it.run() }
+                .setTransactionExecutor { it.run() }
                 .build()
         repository = RadioStationRepository(database.radioStationDao())
     }
@@ -307,6 +311,8 @@ class RadioStationRepositoryBackupTest {
                         RuntimeEnvironment.getApplication(),
                         AppDatabase::class.java,
                     ).allowMainThreadQueries()
+                    .setQueryExecutor { it.run() }
+                    .setTransactionExecutor { it.run() }
                     .build()
             val freshRepository = RadioStationRepository(freshDatabase.radioStationDao())
 

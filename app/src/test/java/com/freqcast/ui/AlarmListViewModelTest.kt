@@ -41,6 +41,10 @@ class AlarmListViewModelTest {
             Room
                 .inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), AppDatabase::class.java)
                 .allowMainThreadQueries()
+                // See DiscoverStationsViewModelTest: keeps Room's suspend DAO calls off its own
+                // real thread pool so they can't race the virtual test dispatcher.
+                .setQueryExecutor { it.run() }
+                .setTransactionExecutor { it.run() }
                 .build()
         repository = AlarmRepository(database.wakeAlarmDao())
         legacyStore = AlarmStateStore(ApplicationProvider.getApplicationContext())
