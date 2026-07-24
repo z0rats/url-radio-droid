@@ -15,9 +15,7 @@ Most radio apps expect you to manually find the actual stream URL.
 Freqcast lets you paste the station's website instead. It first checks Radio Browser, then scans the website itself, discovers a playable stream, verifies that it works, and adds it to your library. In many cases, you never have to hunt for a .mp3, .aac, or .m3u8 URL yourself.
 
 <p align="center">
-  <img src="docs/screenshots/1.jpg" alt="App main screen" width="220" />
-  <img src="docs/screenshots/2.jpg" alt="App add station screen" width="220" />
-  <img src="docs/screenshots/3.jpg" alt="App playback screen" width="220" />
+  <img src="docs/demo.gif" alt="Adding a station by pasting its website link" width="280" />
 </p>
 
 ## ✨ Features
